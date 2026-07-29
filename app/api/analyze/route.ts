@@ -67,18 +67,21 @@ CRITICAL TIME & SPECIFIC YEAR MANDATE:
 All references to project creation/start (立项/开端时间), releases (发布版本), release download counts, star trajectory milestones, and community comments (Issue/PR 评论) MUST explicitly include specific years (e.g., "2022年立项", "2024年发布 v2.4.0 版本", "2025年项目突破万星", "2026年最新社区讨论"). Never output vague dates without specific years.
 CRITICAL MANDATE: All generated JSON string fields MUST be written in professional, natural Simplified Chinese (简体中文).`
 
-  if (persona === 'roast') {
-    return `You are a brutally honest, witty senior staff code reviewer doing a hilarious yet constructive tech roast of this GitHub repository in Chinese (中文). Highlight both absurd quirks, release download numbers, and real achievements with sharp developer humor.${dateMandate}`
-  }
-  if (persona === 'vc') {
-    return `You are a Silicon Valley Venture Capital Partner analyzing open-source project trajectory, release package download demand, star growth momentum, community network effects, and enterprise adoption potential in Chinese (中文).${dateMandate}`
-  }
-  if (persona === 'champion') {
-    return `You are a passionate Open Source Advocate focusing on release accessibility, contributor inclusivity, documentation clarity, maintainer health, and developer joy in Chinese (中文).${dateMandate}`
-  }
-  return `You are an elite, highly experienced software engineering auditor and GitHub ecosystem analyst.
+  const personaFocus: Record<PersonaKey, string> = {
+    director: `You are an elite, highly experienced software engineering auditor and GitHub ecosystem analyst.
 You evaluate open-source software projects based on stargazers, release binary download statistics, issue health, community health score, contributor velocity, language stack distribution, and ecosystem momentum.
-Provide precise, insightful, and human-like assessment. Avoid generic SaaS hype terms like "supercharge" or "game-changer". Be analytical, concise, and punchy.${dateMandate}`
+FOCUS ON: Architecture quality, code health, engineering practices, CI/CD maturity, and technical debt assessment. Analyze the project's README and CONTRIBUTING guidelines to understand its architecture design philosophy, module organization, and developer onboarding quality.
+Provide precise, insightful, and human-like assessment. Avoid generic SaaS hype terms like "supercharge" or "game-changer". Be analytical, concise, and punchy.${dateMandate}`,
+    roast: `You are a brutally honest, witty senior staff code reviewer doing a hilarious yet constructive tech roast of this GitHub repository in Chinese (中文).
+FOCUS ON: Code quality quirks, architecture absurdities, dependency bloat, documentation gaps, and funny contradictions you find in the README/contributing docs. Highlight both absurd quirks, release download numbers, and real achievements with sharp developer humor.
+Read the README and CONTRIBUTING.md carefully to find roasting material - over-promising docs, missing setup steps, or funny contradictions.${dateMandate}`,
+    vc: `You are a Silicon Valley Venture Capital Partner analyzing open-source project trajectory, release package download demand, star growth momentum, community network effects, and enterprise adoption potential in Chinese (中文).
+FOCUS ON: Commercial viability, market positioning, competitive moat, growth metrics, and investment thesis. Pay attention to the project's README for market positioning clues and value proposition.${dateMandate}`,
+    champion: `You are a passionate Open Source Advocate focusing on release accessibility, contributor inclusivity, documentation clarity, maintainer health, and developer joy in Chinese (中文).
+FOCUS ON: Community health signals from README and CONTRIBUTING.md quality, onboarding experience, inclusive language, maintainer burnout risk, and contributor diversity. Evaluate how welcoming the project docs are for new contributors.${dateMandate}`,
+  }
+
+  return personaFocus[persona] || personaFocus.director
 }
 
 function formatReleases(releases: Release[]): string {
@@ -104,10 +107,16 @@ function buildPrompt(
   topLanguages: string,
   topContributors: string,
   starHistoryLength: number,
-  firstStarDate: string
+  firstStarDate: string,
+  readme: string | null,
+  contributing: string | null
 ): string {
   const computedTotalDownloads = totalDownloads || releases.reduce((sum, r) => sum + r.total_downloads, 0)
   const formattedReleases = formatReleases(releases)
+
+  // Truncate README/CONTRIBUTING to reasonable lengths for the AI prompt
+  const readmeExcerpt = readme ? readme.slice(0, 3000) + (readme.length > 3000 ? '\n...(truncated)' : '') : 'No README.md available.'
+  const contributingExcerpt = contributing ? contributing.slice(0, 2000) + (contributing.length > 2000 ? '\n...(truncated)' : '') : 'No CONTRIBUTING.md available.'
 
   return `
 Analyze the following comprehensive GitHub repository metrics and full telemetry context:
@@ -124,13 +133,20 @@ Topics / Keywords: ${(repo.topics || []).join(', ') || 'None'}
 Created At: ${repo.created_at}
 Last Pushed: ${repo.pushed_at}
 
-=== 2. RELEASE & FILE DOWNLOAD TELEMETRY ===
+=== 2. PROJECT DOCUMENTATION ===
+README.md:
+${readmeExcerpt}
+
+CONTRIBUTING.md:
+${contributingExcerpt}
+
+=== 3. RELEASE & FILE DOWNLOAD TELEMETRY ===
 Total Release File Downloads: ${computedTotalDownloads.toLocaleString()}
 Total Release Versions Count: ${releases.length}
 Latest Releases & Downloads:
 ${formattedReleases}
 
-=== 3. COMMUNITY, CONTRIBUTORS & ISSUE HEALTH ===
+=== 4. COMMUNITY, CONTRIBUTORS & ISSUE HEALTH ===
 Community Health Score: ${communityHealthScore}%
 ${issueHealth ? `Issue Resolution Estimate: ${Math.round(issueHealth.resolutionRate * 100)}%
 Avg PR Merge / Issue Closing Time: ${issueHealth.avgDaysToClosePr} days
@@ -139,12 +155,12 @@ Stale Issues Percentage: ${issueHealth.staleIssuesPercentage}%
 Open PRs: ${issueHealth.openPRsEstimate}` : 'Issue health data not available.'}
 Top Core Contributors: ${topContributors || 'Not specified'}
 
-=== 4. CODEBASE ARCHITECTURE ===
+=== 5. CODEBASE ARCHITECTURE ===
 Language Stack Distribution: ${topLanguages || 'Not specified'}
 Star Trajectory: Tracked across ${starHistoryLength} daily time points from ${firstStarDate} to today
 
 === AUDIT DIRECTIVE ===
-Synthesize ALL of the telemetry data above into a thorough Chinese evaluation JSON output.`
+Synthesize ALL of the telemetry data and project documentation above into a thorough Chinese evaluation JSON output. Focus STRICTLY on your assigned persona's perspective - do not drift into other personas' territory.`
 }
 
 function generateTelemetryFallbackReview(
@@ -202,7 +218,7 @@ function generateTelemetryFallbackReview(
 export async function POST(request: Request) {
   try {
     const body = await request.json()
-    const { repo, releases = [], totalReleaseDownloads = 0, issueHealth, communityHealthScore = 85, languages = {}, contributors = [], starHistory = [], firstStarDate = '' } = body
+    const { repo, releases = [], totalReleaseDownloads = 0, issueHealth, communityHealthScore = 85, languages = {}, contributors = [], starHistory = [], firstStarDate = '', readme = null, contributing = null } = body
     const persona = (body.persona === 'roast' || body.persona === 'vc' || body.persona === 'champion' ? body.persona : 'director') as PersonaKey
 
     if (!repo || !repo.name) {
@@ -257,7 +273,9 @@ RETURN ONLY A RAW JSON OBJECT (no wrap codeblocks except json) with these exact 
       topLanguages,
       topContributors,
       starHistory.length,
-      firstStarDate
+      firstStarDate,
+      readme,
+      contributing
     )
 
     const requestBody: Record<string, unknown> = {

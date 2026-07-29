@@ -1,0 +1,211 @@
+'use client'
+
+import { HeatmapData } from '@/types'
+
+interface HeatmapProps {
+  data: HeatmapData
+}
+
+function getColor(level: 0 | 1 | 2 | 3 | 4): string {
+  switch (level) {
+    case 0: return '#1A1B1D'
+    case 1: return 'rgba(56, 189, 248, 0.15)'
+    case 2: return 'rgba(56, 189, 248, 0.30)'
+    case 3: return 'rgba(56, 189, 248, 0.55)'
+    case 4: return 'rgba(56, 189, 248, 0.80)'
+  }
+}
+
+function getMonthLabel(dateStr: string): string {
+  const d = new Date(dateStr + 'T00:00:00')
+  const labels = ['1月', '2月', '3月', '4月', '5月', '6月', '7月', '8月', '9月', '10月', '11月', '12月']
+  return labels[d.getMonth()]
+}
+
+export function Heatmap({ data }: HeatmapProps) {
+  if (data.cells.length === 0) {
+    return (
+      <div className="bg-[#222427] border border-[var(--border-neutral-l1)] rounded-[10px] p-5 shadow-xl">
+        <div className="flex items-center gap-2 mb-4 border-b border-[var(--border-neutral-l1)] pb-3">
+          <div className="w-8 h-8 rounded-lg bg-[rgba(56,189,248,0.15)] flex items-center justify-center">
+            <svg className="w-4 h-4 text-[#38BDF8]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <rect x="3" y="3" width="18" height="18" rx="2" />
+              <line x1="3" y1="9" x2="21" y2="9" />
+              <line x1="9" y1="21" x2="9" y2="9" />
+            </svg>
+          </div>
+          <h3 className="text-xs font-mono uppercase tracking-wider text-[#D1D3DB] font-semibold">
+            项目提交热力图
+          </h3>
+        </div>
+        <p className="text-xs font-mono text-[#9599A6] text-center py-8">暂无提交活动数据</p>
+      </div>
+    )
+  }
+
+  const today = new Date()
+  const isLastDayOfMonth = new Date(today.getFullYear(), today.getMonth() + 1, 0).getDate() === today.getDate()
+
+  const cells = data.cells
+
+  // Group by week for grid layout
+  const weeks: (typeof cells)[] = []
+  const startDate = new Date(cells[0].date + 'T00:00:00')
+  const startDayOfWeek = startDate.getDay()
+
+  // Pad start
+  const padStart: typeof cells[number][] = []
+  for (let i = 0; i < startDayOfWeek; i++) {
+    padStart.push({ date: '', count: 0, level: 0 })
+  }
+
+  const allCells = [...padStart, ...cells]
+  for (let i = 0; i < allCells.length; i += 7) {
+    weeks.push(allCells.slice(i, i + 7))
+  }
+
+  // Extract unique month labels
+  const monthLabels: { label: string; col: number }[] = []
+  let lastMonth = ''
+  let colIdx = 0
+  // Check first non-pad cell for each week position
+  for (let w = 0; w < weeks.length; w++) {
+    for (let d = 0; d < weeks[w].length; d++) {
+      const cell = weeks[w][d]
+      if (cell.date) {
+        const m = getMonthLabel(cell.date)
+        if (m !== lastMonth) {
+          monthLabels.push({ label: m, col: w })
+          lastMonth = m
+        }
+        break
+      }
+    }
+  }
+
+  const dayLabels = ['', '一', '', '三', '', '五', '']
+
+  return (
+    <div className="bg-[#222427] border border-[var(--border-neutral-l1)] rounded-[10px] p-5 shadow-xl">
+      <div className="flex items-center justify-between mb-4 border-b border-[var(--border-neutral-l1)] pb-3">
+        <div className="flex items-center gap-2">
+          <div className="w-8 h-8 rounded-lg bg-[rgba(56,189,248,0.15)] flex items-center justify-center">
+            <svg className="w-4 h-4 text-[#38BDF8]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <rect x="3" y="3" width="18" height="18" rx="2" />
+              <line x1="3" y1="9" x2="21" y2="9" />
+              <line x1="9" y1="21" x2="9" y2="9" />
+            </svg>
+          </div>
+          <h3 className="text-xs font-mono uppercase tracking-wider text-[#D1D3DB] font-semibold">
+            项目提交热力图
+          </h3>
+        </div>
+        <div className="flex items-center gap-2">
+          <span className="text-[10px] font-mono text-[#9599A6]">
+            {data.totalCommits.toLocaleString()} commits
+          </span>
+        </div>
+      </div>
+
+      {/* Desktop heatmap */}
+      <div className="hidden sm:block">
+        {/* Month labels */}
+        <div className="flex mb-1 ml-8">
+          <div className="flex flex-1">
+            {monthLabels.map((ml, i) => {
+              const prevCol = i > 0 ? monthLabels[i - 1].col : 0
+              const width = ml.col - prevCol
+              return (
+                <div
+                  key={ml.label}
+                  className="text-[10px] font-mono text-[#9599A6]"
+                  style={{ flex: width > 0 ? width : 1 }}
+                >
+                  {ml.label}
+                </div>
+              )
+            })}
+          </div>
+        </div>
+
+        <div className="flex">
+          {/* Day labels */}
+          <div className="flex flex-col gap-[3px] mr-2 pt-[2px]">
+            {dayLabels.map((label, i) => (
+              <div key={i} className="w-4 h-3 flex items-center">
+                <span className="text-[9px] font-mono text-[#9599A6]">{label}</span>
+              </div>
+            ))}
+          </div>
+
+          {/* Cells */}
+          <div className="flex gap-[3px] overflow-x-auto pb-1">
+            {weeks.map((week, wi) => (
+              <div key={wi} className="flex flex-col gap-[3px]">
+                {week.map((cell, di) => (
+                  <div
+                    key={`${wi}-${di}`}
+                    className="w-3 h-3 rounded-[2px] flex-shrink-0"
+                    style={{
+                      backgroundColor: cell.date ? getColor(cell.level) : 'transparent',
+                    }}
+                    title={cell.date ? `${cell.date}: ${cell.count} commits` : ''}
+                  />
+                ))}
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      {/* Mobile heatmap - horizontal scroll */}
+      <div className="sm:hidden overflow-x-auto pb-2 -mx-2 px-2">
+        <div className="flex gap-[2px] min-w-max">
+          {(() => {
+            // Split by rows of 7 for mobile horizontal view
+            const rows: (typeof cells)[] = []
+            const paddedCells = [...padStart, ...cells]
+            for (let r = 0; r < 7; r++) {
+              const row: typeof cells = []
+              for (let c = r; c < paddedCells.length; c += 7) {
+                row.push(paddedCells[c])
+              }
+              rows.push(row)
+            }
+            return rows.map((row, ri) => (
+              <div key={ri} className="flex gap-[2px]">
+                <span className="text-[8px] font-mono text-[#9599A6] w-3 text-right pr-0.5 leading-3 flex items-center">
+                  {dayLabels[ri]}
+                </span>
+                {row.map((cell, ci) => (
+                  <div
+                    key={ci}
+                    className="w-2.5 h-2.5 rounded-[1px] flex-shrink-0"
+                    style={{
+                      backgroundColor: cell.date ? getColor(cell.level) : 'transparent',
+                    }}
+                    title={cell.date ? `${cell.date}: ${cell.count} commits` : ''}
+                  />
+                ))}
+              </div>
+            ))
+          })()}
+        </div>
+      </div>
+
+      {/* Legend */}
+      <div className="flex items-center justify-end gap-1 mt-3">
+        <span className="text-[9px] font-mono text-[#9599A6] mr-1">少</span>
+        {[0, 1, 2, 3, 4].map(level => (
+          <div
+            key={level}
+            className="w-3 h-3 rounded-[2px]"
+            style={{ backgroundColor: getColor(level as 0 | 1 | 2 | 3 | 4) }}
+            title={`Level ${level}`}
+          />
+        ))}
+        <span className="text-[9px] font-mono text-[#9599A6] ml-1">多</span>
+      </div>
+    </div>
+  )
+}

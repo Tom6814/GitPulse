@@ -13,6 +13,8 @@ import { DeveloperVitals } from '@/components/DeveloperVitals'
 import { AIExecutiveReview } from '@/components/AIExecutiveReview'
 import { LiveTelemetryFeed } from '@/components/LiveTelemetryFeed'
 import { SettingsModal } from '@/components/SettingsModal'
+import { RadarChart } from '@/components/RadarChart'
+import { Heatmap } from '@/components/Heatmap'
 import { useSettings } from '@/hooks/useSettings'
 import { useNotifications } from '@/hooks/useNotifications'
 
@@ -223,6 +225,15 @@ export default function Home() {
                   : undefined
               }
             />
+
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              <RadarChart
+                axes={stats.radar.axes}
+                values={stats.radar.values}
+                rawValues={stats.radar.rawValues}
+              />
+              <Heatmap data={stats.heatmap} />
+            </div>
 
             <DetailPanel stats={stats} />
 

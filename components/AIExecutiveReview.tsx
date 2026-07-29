@@ -94,14 +94,7 @@ export function AIExecutiveReview({ data }: AIExecutiveReviewProps) {
     throw new Error(`服务器响应格式异常 (${cleanText.slice(0, 80) || fallbackErrMsg})`)
   }
 
-  const forceRefresh = async (persona: PersonaKey) => {
-    setIsLoading(true)
-    setErrorMsg('')
-    try {
-      const res = await fetch('/api/analyze', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
+  const requestBody = {
           repo: data.repo,
           releases: data.releases,
           totalReleaseDownloads: data.totalReleaseDownloads,
@@ -111,8 +104,19 @@ export function AIExecutiveReview({ data }: AIExecutiveReviewProps) {
           contributors: data.contributors,
           starHistory: data.starHistory,
           firstStarDate: data.stars.firstStarDate,
-          persona,
-        }),
+          persona: activePersona,
+          readme: data.readme,
+          contributing: data.contributing,
+        }
+
+  const forceRefresh = async (persona: PersonaKey) => {
+    setIsLoading(true)
+    setErrorMsg('')
+    try {
+      const res = await fetch('/api/analyze', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(requestBody),
       })
       const jsonResult = await parseResponseJson(res, '生成 AI 报告失败') as unknown as AIReviewResult
       setCachedReviews(prev => ({ ...prev, [persona]: jsonResult }))
@@ -133,18 +137,7 @@ export function AIExecutiveReview({ data }: AIExecutiveReviewProps) {
         const res = await fetch('/api/analyze', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            repo: data.repo,
-            releases: data.releases,
-            totalReleaseDownloads: data.totalReleaseDownloads,
-            issueHealth: data.issueHealth,
-            communityHealthScore: data.communityHealthScore,
-            languages: data.languages,
-            contributors: data.contributors,
-            starHistory: data.starHistory,
-            firstStarDate: data.stars.firstStarDate,
-            persona: activePersona,
-          }),
+          body: JSON.stringify({ ...requestBody, persona: activePersona }),
         })
         const jsonResult = await parseResponseJson(res, '生成 AI 评估报告失败') as unknown as AIReviewResult
         if (!ignore) setCachedReviews(prev => ({ ...prev, [activePersona]: jsonResult }))
@@ -190,6 +183,8 @@ export function AIExecutiveReview({ data }: AIExecutiveReviewProps) {
           messages: updatedHistory.map(m => ({ role: m.role, content: m.content })),
           initialReview: activeReview,
           totalReleaseDownloads: data.totalReleaseDownloads,
+          readme: data.readme,
+          contributing: data.contributing,
         }),
       })
       const resJson = await parseResponseJson(res, '接收 AI 响应失败') as unknown as { reply: string }

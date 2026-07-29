@@ -208,6 +208,45 @@ export interface NotificationLog {
   created_at: string
 }
 
+export interface RadarPoint {
+  label: string
+  value: number
+  fullMark: number
+  raw: number
+}
+
+export interface RadarData {
+  axes: string[]
+  values: number[]
+  rawValues: number[]
+}
+
+export interface HeatmapCell {
+  date: string
+  count: number
+  level: 0 | 1 | 2 | 3 | 4
+}
+
+export interface HeatmapData {
+  cells: HeatmapCell[]
+  totalCommits: number
+  maxDaily: number
+}
+
+export interface DailyDownloadRecord {
+  date: string
+  downloads: number
+}
+
+export interface DailyDownloadStats {
+  total: number
+  today: number
+  history: DailyDownloadRecord[]
+  maxDaily: number
+  maxDailyDate: string
+  latestReleaseDate: string
+}
+
 export interface RepoAnalysisData {
   repo: GitHubRepo
   languages: LanguageMap
@@ -224,6 +263,11 @@ export interface RepoAnalysisData {
   lastUpdated: string
   isFallbackData: boolean
   rateLimitRemaining: number
+  radar: RadarData
+  heatmap: HeatmapData
+  dailyDownloads: DailyDownloadStats
+  readme: string | null
+  contributing: string | null
 }
 
 export type LoadingState = 'loading' | 'success' | 'error' | 'offline'
