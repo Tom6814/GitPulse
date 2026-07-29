@@ -1,0 +1,229 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --radius-2: 2px;
+  --radius-4: 4px;
+  --radius-6: 6px;
+  --radius-8: 8px;
+  --radius-10: 10px;
+  --radius-full: 9999px;
+
+  --spacer-0: 0px;
+  --spacer-4: 4px;
+  --spacer-6: 6px;
+  --spacer-8: 8px;
+  --spacer-12: 12px;
+  --spacer-16: 16px;
+  --spacer-24: 24px;
+  --spacer-32: 32px;
+  --spacer-40: 40px;
+
+  --font-family-default: "SF Pro Text", system-ui, -apple-system, sans-serif;
+  --font-family-heading: "SF Pro", system-ui, -apple-system, sans-serif;
+  --font-family-mono: "JetBrains Mono", ui-monospace, monospace;
+
+  --bg-base-default: #1A1B1D;
+  --bg-base-secondary: #222427;
+  --bg-base-tertiary: #2A2D31;
+  --bg-overlay-l1: rgba(224, 226, 242, 0.04);
+  --bg-overlay-l2: rgba(224, 226, 242, 0.06);
+  --bg-overlay-l3: rgba(224, 226, 242, 0.08);
+  --bg-overlay-l4: rgba(224, 226, 242, 0.12);
+  --bg-brand: #32F08C;
+  --bg-brand-hover: #0FDC78;
+  --bg-brand-disabled: rgba(50, 240, 140, 0.2);
+  --bg-brand-popup: rgba(50, 240, 140, 0.12);
+
+  --text-default: #D1D3DB;
+  --text-default-hover: #F5F9FE;
+  --text-secondary: #9599A6;
+  --text-tertiary: #666B75;
+  --text-onbrand: #0C0C0D;
+  --text-brand: #32F08C;
+
+  --border-neutral-l1: rgba(224, 226, 242, 0.1);
+  --border-neutral-l2: rgba(224, 226, 242, 0.16);
+  --border-neutral-l3: rgba(224, 226, 242, 0.2);
+  --border-brand: #32F08C;
+
+  --status-primary-default: #387BFF;
+  --status-success-default: #33C192;
+  --status-alert-default: #D29D00;
+  --status-warning-default: #D27E24;
+  --status-error-default: #F65A5A;
+  --status-error-surface-l1: rgba(246, 70, 70, 0.18);
+  --status-error-surface-l2: rgba(246, 70, 70, 0.28);
+  --status-success-surface-l1: rgba(0, 165, 110, 0.18);
+  --status-success-surface-l2: rgba(0, 165, 110, 0.28);
+  --status-warning-surface-l1: rgba(210, 126, 36, 0.16);
+
+  --bg-primary: #1A1B1D;
+  --bg-secondary: #222427;
+  --bg-tertiary: #2A2D31;
+  --text-primary: #D1D3DB;
+  --text-secondary-c: #9599A6;
+  --accent-green: #33C192;
+  --accent-red: #F65A5A;
+  --accent-blue: #387BFF;
+  --accent-purple: #B38CFF;
+  --accent-orange: #D29D00;
+}
+
+body {
+  background-color: var(--bg-base-default);
+  color: var(--text-default);
+  font-family: var(--font-family-default);
+}
+
+@layer utilities {
+  .bg-grid-pattern {
+    background-size: 32px 32px;
+    background-image:
+      linear-gradient(to right, rgba(224, 226, 242, 0.04) 1px, transparent 1px),
+      linear-gradient(to bottom, rgba(224, 226, 242, 0.04) 1px, transparent 1px);
+  }
+
+  .bg-dots-pattern {
+    background-image: radial-gradient(rgba(224, 226, 242, 0.08) 1px, transparent 1px);
+    background-size: 16px 16px;
+  }
+}
+
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: var(--bg-base-default);
+}
+::-webkit-scrollbar-thumb {
+  background: var(--bg-base-tertiary);
+  border-radius: var(--radius-4);
+}
+::-webkit-scrollbar-thumb:hover {
+  background: var(--bg-overlay-l4);
+}
+
+.ds-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--spacer-6);
+  padding: 0 var(--spacer-12);
+  height: 28px;
+  border-radius: var(--radius-4);
+  border: 1px solid transparent;
+  cursor: pointer;
+  user-select: none;
+  white-space: nowrap;
+  font-family: var(--font-family-mono);
+  font-size: 12px;
+  line-height: 1;
+  font-weight: 500;
+  transition: background .12s ease, color .12s ease, border-color .12s ease, opacity .12s ease;
+}
+.ds-btn--brand {
+  background: var(--bg-brand);
+  color: var(--text-onbrand);
+  border-color: var(--bg-brand);
+  font-weight: 600;
+}
+.ds-btn--brand:hover {
+  background: var(--bg-brand-hover);
+  border-color: var(--bg-brand-hover);
+}
+.ds-btn--secondary {
+  background: var(--bg-overlay-l2);
+  color: var(--text-default);
+  border-color: var(--border-neutral-l1);
+}
+.ds-btn--secondary:hover {
+  background: var(--bg-overlay-l3);
+  border-color: var(--border-neutral-l2);
+}
+.ds-btn--primary {
+  background: var(--text-default);
+  color: var(--bg-base-default);
+  border-color: var(--text-default);
+  font-weight: 600;
+}
+
+.ds-card {
+  background: var(--bg-base-secondary);
+  border: 1px solid var(--border-neutral-l1);
+  border-radius: var(--radius-8);
+  padding: var(--spacer-24);
+}
+
+.ds-statcard {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacer-8);
+  padding: var(--spacer-16);
+  background: var(--bg-base-secondary);
+  border: 1px solid var(--border-neutral-l1);
+  border-radius: var(--radius-8);
+  min-width: 180px;
+  transition: border-color .15s ease;
+}
+
+.ds-tag {
+  display: inline-flex;
+  align-items: center;
+  padding: 0 var(--spacer-6);
+  height: 20px;
+  border-radius: var(--radius-4);
+  font-size: 11px;
+  font-family: var(--font-family-mono);
+  line-height: 1;
+  background: var(--bg-overlay-l2);
+  color: var(--text-secondary);
+  border: 1px solid var(--border-neutral-l1);
+}
+.ds-tag--brand {
+  background: var(--bg-brand-popup);
+  color: var(--text-brand);
+  border-color: rgba(50, 240, 140, 0.25);
+}
+.ds-tag--success {
+  background: var(--status-success-surface-l1);
+  color: var(--status-success-default);
+  border-color: rgba(0, 165, 110, 0.25);
+}
+.ds-tag--warning {
+  background: var(--status-warning-surface-l1);
+  color: var(--status-warning-default);
+}
+.ds-tag--danger {
+  background: var(--status-error-surface-l1);
+  color: var(--status-error-default);
+}
+
+.mono, .num, code, samp, pre {
+  font-family: var(--font-family-mono);
+  font-variant-numeric: tabular-nums;
+}
+
+@keyframes pulse-green {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
+}
+@keyframes slide-in-right {
+  from { transform: translateX(100%); opacity: 0; }
+  to { transform: translateX(0); opacity: 1; }
+}
+@keyframes number-bounce {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.05); }
+}
+.animate-pulse-green {
+  animation: pulse-green 2s ease-in-out infinite;
+}
+.animate-slide-in {
+  animation: slide-in-right 400ms ease-out;
+}
+.animate-number-bounce {
+  animation: number-bounce 300ms ease-out;
+}

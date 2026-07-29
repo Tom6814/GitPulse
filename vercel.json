@@ -1,0 +1,16 @@
+{
+  "framework": "nextjs",
+  "buildCommand": "bun run build",
+  "installCommand": "bun install",
+  "devCommand": "bun run dev",
+  "regions": ["hkg1"],
+  "functions": {
+    "app/api/stats/route.ts": { "maxDuration": 60 },
+    "app/api/snapshots/route.ts": { "maxDuration": 60 },
+    "app/api/analyze/route.ts": { "maxDuration": 30 },
+    "app/api/analyze/chat/route.ts": { "maxDuration": 30 },
+    "app/api/events/route.ts": { "maxDuration": 30 },
+    "app/api/poll/route.ts": { "maxDuration": 15 },
+    "app/api/notifications/route.ts": { "maxDuration": 10 }
+  }
+}
