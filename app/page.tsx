@@ -205,6 +205,15 @@ export default function Home() {
               />
             </div>
 
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              <RadarChart
+                axes={stats.radar.axes}
+                values={stats.radar.values}
+                rawValues={stats.radar.rawValues}
+              />
+              <Heatmap data={stats.heatmap} />
+            </div>
+
             <DeveloperVitals issueHealth={stats.issueHealth} repo={stats.repo} />
 
             <LiveTelemetryFeed
@@ -225,15 +234,6 @@ export default function Home() {
                   : undefined
               }
             />
-
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              <RadarChart
-                axes={stats.radar.axes}
-                values={stats.radar.values}
-                rawValues={stats.radar.rawValues}
-              />
-              <Heatmap data={stats.heatmap} />
-            </div>
 
             <DetailPanel stats={stats} />
 

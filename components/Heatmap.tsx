@@ -35,7 +35,7 @@ export function Heatmap({ data }: HeatmapProps) {
             </svg>
           </div>
           <h3 className="text-xs font-mono uppercase tracking-wider text-[#D1D3DB] font-semibold">
-            项目提交热力图
+            项目提交日历
           </h3>
         </div>
         <p className="text-xs font-mono text-[#9599A6] text-center py-8">暂无提交活动数据</p>
@@ -43,39 +43,34 @@ export function Heatmap({ data }: HeatmapProps) {
     )
   }
 
-  const today = new Date()
-  const isLastDayOfMonth = new Date(today.getFullYear(), today.getMonth() + 1, 0).getDate() === today.getDate()
-
   const cells = data.cells
 
-  // Group by week for grid layout
-  const weeks: (typeof cells)[] = []
+  // Group by week (7 rows × N columns)
   const startDate = new Date(cells[0].date + 'T00:00:00')
   const startDayOfWeek = startDate.getDay()
 
-  // Pad start
+  // Pad start of first week
   const padStart: typeof cells[number][] = []
   for (let i = 0; i < startDayOfWeek; i++) {
     padStart.push({ date: '', count: 0, level: 0 })
   }
 
   const allCells = [...padStart, ...cells]
+  const weeks: (typeof cells)[] = []
   for (let i = 0; i < allCells.length; i += 7) {
     weeks.push(allCells.slice(i, i + 7))
   }
 
-  // Extract unique month labels
-  const monthLabels: { label: string; col: number }[] = []
+  // Month labels - track which week columns start a new month
+  const monthLabels: { label: string; weekIdx: number }[] = []
   let lastMonth = ''
-  let colIdx = 0
-  // Check first non-pad cell for each week position
   for (let w = 0; w < weeks.length; w++) {
     for (let d = 0; d < weeks[w].length; d++) {
       const cell = weeks[w][d]
       if (cell.date) {
         const m = getMonthLabel(cell.date)
         if (m !== lastMonth) {
-          monthLabels.push({ label: m, col: w })
+          monthLabels.push({ label: m, weekIdx: w })
           lastMonth = m
         }
         break
@@ -83,7 +78,13 @@ export function Heatmap({ data }: HeatmapProps) {
     }
   }
 
-  const dayLabels = ['', '一', '', '三', '', '五', '']
+  // Pad end of last week if incomplete
+  const lastWeek = weeks[weeks.length - 1]
+  if (lastWeek && lastWeek.length < 7) {
+    for (let i = lastWeek.length; i < 7; i++) {
+      lastWeek.push({ date: '', count: 0, level: 0 })
+    }
+  }
 
   return (
     <div className="bg-[#222427] border border-[var(--border-neutral-l1)] rounded-[10px] p-5 shadow-xl">
@@ -97,29 +98,84 @@ export function Heatmap({ data }: HeatmapProps) {
             </svg>
           </div>
           <h3 className="text-xs font-mono uppercase tracking-wider text-[#D1D3DB] font-semibold">
-            项目提交热力图
+            项目提交日历
           </h3>
         </div>
-        <div className="flex items-center gap-2">
-          <span className="text-[10px] font-mono text-[#9599A6]">
-            {data.totalCommits.toLocaleString()} commits
-          </span>
-        </div>
+        <span className="text-[10px] font-mono text-[#9599A6]">
+          {data.totalCommits.toLocaleString()} commits
+        </span>
       </div>
 
-      {/* Desktop heatmap */}
+      {/* Desktop: True GitHub-style grid (7 rows × ~52 cols) */}
       <div className="hidden sm:block">
-        {/* Month labels */}
-        <div className="flex mb-1 ml-8">
+        {/* Month labels row */}
+        <div className="flex mb-1">
+          {/* spacer for day labels column */}
+          <div className="w-5 shrink-0" />
           <div className="flex flex-1">
             {monthLabels.map((ml, i) => {
-              const prevCol = i > 0 ? monthLabels[i - 1].col : 0
-              const width = ml.col - prevCol
+              // Calculate how many week columns this month label spans
+              const nextIdx = i + 1 < monthLabels.length ? monthLabels[i + 1].weekIdx : weeks.length
+              const span = nextIdx - ml.weekIdx
               return (
                 <div
                   key={ml.label}
-                  className="text-[10px] font-mono text-[#9599A6]"
-                  style={{ flex: width > 0 ? width : 1 }}
+                  className="text-[9px] font-mono text-[#9599A6]"
+                  style={{ flex: `0 0 ${span * 100 / weeks.length}%` }}
+                >
+                  {ml.label}
+                </div>
+              )
+            })}
+          </div>
+        </div>
+
+        {/* Grid: rows = days, cols = weeks */}
+        <div className="flex">
+          {/* Day labels column */}
+          <div className="flex flex-col gap-[2px] w-5 shrink-0 pt-[1px]">
+            {['', '一', '', '三', '', '五', ''].map((label, i) => (
+              <span key={i} className="h-[9px] flex items-center text-[8px] font-mono text-[#9599A6] leading-none">
+                {label}
+              </span>
+            ))}
+          </div>
+
+          {/* Cell grid: each column is a week, each row is a day */}
+          <div className="flex gap-[2px] flex-1">
+            {weeks.map((week, wi) => (
+              <div key={wi} className="flex flex-col gap-[2px] flex-1 min-w-0">
+                {week.map((cell, di) => (
+                  <div
+                    key={`${wi}-${di}`}
+                    className="w-full aspect-square rounded-[1px]"
+                    style={{
+                      backgroundColor: cell.date ? getColor(cell.level) : 'transparent',
+                      minWidth: 5,
+                    }}
+                    title={cell.date ? `${cell.date}: ${cell.count} commits` : ''}
+                  />
+                ))}
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      {/* Mobile: same grid, tiny cells */}
+      <div className="sm:hidden">
+        {/* Month labels */}
+        <div className="flex mb-1">
+          <div className="w-4 shrink-0" />
+          <div className="flex flex-1">
+            {monthLabels.map((ml, i) => {
+              const nextIdx = i + 1 < monthLabels.length ? monthLabels[i + 1].weekIdx : weeks.length
+              const span = nextIdx - ml.weekIdx
+              return (
+                <div
+                  key={ml.label}
+                  className="text-[7px] font-mono text-[#9599A6]"
+                  style={{ flex: `0 0 ${span * 100 / weeks.length}%` }}
                 >
                   {ml.label}
                 </div>
@@ -129,23 +185,20 @@ export function Heatmap({ data }: HeatmapProps) {
         </div>
 
         <div className="flex">
-          {/* Day labels */}
-          <div className="flex flex-col gap-[3px] mr-2 pt-[2px]">
-            {dayLabels.map((label, i) => (
-              <div key={i} className="w-4 h-3 flex items-center">
-                <span className="text-[9px] font-mono text-[#9599A6]">{label}</span>
-              </div>
+          <div className="flex flex-col gap-px w-4 shrink-0 pt-px">
+            {['', '一', '', '三', '', '五', ''].map((label, i) => (
+              <span key={i} className="h-[7px] flex items-center text-[6px] font-mono text-[#9599A6] leading-none">
+                {label}
+              </span>
             ))}
           </div>
-
-          {/* Cells */}
-          <div className="flex gap-[3px] overflow-x-auto pb-1">
+          <div className="flex gap-px flex-1">
             {weeks.map((week, wi) => (
-              <div key={wi} className="flex flex-col gap-[3px]">
+              <div key={wi} className="flex flex-col gap-px flex-1 min-w-0">
                 {week.map((cell, di) => (
                   <div
                     key={`${wi}-${di}`}
-                    className="w-3 h-3 rounded-[2px] flex-shrink-0"
+                    className="w-full aspect-square rounded-[1px]"
                     style={{
                       backgroundColor: cell.date ? getColor(cell.level) : 'transparent',
                     }}
@@ -155,41 +208,6 @@ export function Heatmap({ data }: HeatmapProps) {
               </div>
             ))}
           </div>
-        </div>
-      </div>
-
-      {/* Mobile heatmap - horizontal scroll */}
-      <div className="sm:hidden overflow-x-auto pb-2 -mx-2 px-2">
-        <div className="flex gap-[2px] min-w-max">
-          {(() => {
-            // Split by rows of 7 for mobile horizontal view
-            const rows: (typeof cells)[] = []
-            const paddedCells = [...padStart, ...cells]
-            for (let r = 0; r < 7; r++) {
-              const row: typeof cells = []
-              for (let c = r; c < paddedCells.length; c += 7) {
-                row.push(paddedCells[c])
-              }
-              rows.push(row)
-            }
-            return rows.map((row, ri) => (
-              <div key={ri} className="flex gap-[2px]">
-                <span className="text-[8px] font-mono text-[#9599A6] w-3 text-right pr-0.5 leading-3 flex items-center">
-                  {dayLabels[ri]}
-                </span>
-                {row.map((cell, ci) => (
-                  <div
-                    key={ci}
-                    className="w-2.5 h-2.5 rounded-[1px] flex-shrink-0"
-                    style={{
-                      backgroundColor: cell.date ? getColor(cell.level) : 'transparent',
-                    }}
-                    title={cell.date ? `${cell.date}: ${cell.count} commits` : ''}
-                  />
-                ))}
-              </div>
-            ))
-          })()}
         </div>
       </div>
 
@@ -199,7 +217,7 @@ export function Heatmap({ data }: HeatmapProps) {
         {[0, 1, 2, 3, 4].map(level => (
           <div
             key={level}
-            className="w-3 h-3 rounded-[2px]"
+            className="w-2.5 h-2.5 rounded-[1px]"
             style={{ backgroundColor: getColor(level as 0 | 1 | 2 | 3 | 4) }}
             title={`Level ${level}`}
           />

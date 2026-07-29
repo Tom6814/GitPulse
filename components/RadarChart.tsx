@@ -60,7 +60,7 @@ export function RadarChart({ axes, values, rawValues }: RadarChartProps) {
             </svg>
           </div>
           <h3 className="text-xs font-mono uppercase tracking-wider text-[#D1D3DB] font-semibold">
-            项目五边形能力面板
+            项目六边形能力面板
           </h3>
         </div>
         <span className="text-[10px] font-mono text-[#9599A6]">近30日活跃数据</span>
@@ -111,7 +111,7 @@ export function RadarChart({ axes, values, rawValues }: RadarChartProps) {
       </div>
 
       {/* Metric summary */}
-      <div className="grid grid-cols-5 gap-1 mt-2">
+      <div className="grid grid-cols-6 gap-1 mt-2">
         {data.map((item, i) => (
           <div key={item.label} className="text-center">
             <div className="text-[11px] font-mono text-[#9599A6] truncate">{item.label}</div>

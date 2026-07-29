@@ -129,14 +129,15 @@ function buildRadarData(
   forks: number,
   contributorCount: number,
   recentNewStars: number,
-  recentPushes: number
+  recentPushes: number,
+  totalDownloads: number
 ): RadarData {
-  const rawValues = [totalStars, contributorCount, forks, recentNewStars, recentPushes]
-  const caps = [1000, 20, 100, 10, 20]
+  const rawValues = [totalStars, contributorCount, forks, recentNewStars, recentPushes, totalDownloads]
+  const caps = [1000, 20, 100, 10, 20, 10000]
   const values = rawValues.map((v, i) => normalizeRadarValue(v, caps[i]))
 
   return {
-    axes: ['Stars', 'Contributors', 'Forks', 'New Stars', 'New Pushes'],
+    axes: ['Stars', 'Contributors', 'Forks', 'New Stars', 'New Pushes', 'Downloads'],
     values,
     rawValues,
   }
@@ -266,7 +267,8 @@ export async function GET() {
       repoData.forks_count,
       contributors.length,
       recentStars,
-      recentPushes
+      recentPushes,
+      totalReleaseDownloads
     )
 
     const heatmap = buildHeatmapData(commitActivity || [])
