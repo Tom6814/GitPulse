@@ -290,6 +290,114 @@ export async function fetchCommunityHealthScore(owner: string, repo: string): Pr
   return typeof score === 'number' ? score : 85
 }
 
+export async function fetchReadme(owner: string, repo: string): Promise<string | null> {
+  try {
+    const response = await fetch(
+      `${GITHUB_API}/repos/${owner}/${repo}/readme`,
+      { headers: getHeaders(), next: { revalidate: 300 } }
+    )
+    if (!response.ok) return null
+    const data = await response.json()
+    const content = data.content || ''
+    // Decode base64
+    return Buffer.from(content, 'base64').toString('utf-8')
+  } catch {
+    return null
+  }
+}
+
+export async function fetchContributing(owner: string, repo: string): Promise<string | null> {
+  try {
+    const response = await fetch(
+      `${GITHUB_API}/repos/${owner}/${repo}/contents/CONTRIBUTING.md`,
+      { headers: getHeaders(), next: { revalidate: 300 } }
+    )
+    if (!response.ok) return null
+    const data = await response.json()
+    const content = data.content || ''
+    return Buffer.from(content, 'base64').toString('utf-8')
+  } catch {
+    return null
+  }
+}
+
+export interface CommitWeek {
+  days: number[]
+  total: number
+  week: number
+}
+
+export async function fetchCommitActivity(
+  owner: string,
+  repo: string
+): Promise<CommitWeek[]> {
+  try {
+    const response = await fetch(
+      `${GITHUB_API}/repos/${owner}/${repo}/stats/commit_activity`,
+      { headers: getHeaders(), next: { revalidate: 300 } }
+    )
+    if (response.status === 202) {
+      // GitHub is computing stats, return empty
+      return []
+    }
+    if (!response.ok) return []
+    const data = await response.json()
+    return Array.isArray(data) ? data : []
+  } catch {
+    return []
+  }
+}
+
+export interface ReleaseDownloadEvent {
+  date: string
+  downloads: number
+  releaseName: string
+}
+
+export function estimateDailyDownloads(releases: import('@/types').Release[]): {
+  history: import('@/types').DailyDownloadRecord[]
+  maxDaily: number
+  maxDailyDate: string
+} {
+  if (releases.length === 0) {
+    return { history: [], maxDaily: 0, maxDailyDate: '' }
+  }
+
+  const dailyMap = new Map<string, number>()
+  const today = new Date()
+  today.setHours(0, 0, 0, 0)
+
+  for (const release of releases) {
+    const pubDate = new Date(release.published_at)
+    pubDate.setHours(0, 0, 0, 0)
+    const daysSincePublish = Math.max(1, Math.ceil((today.getTime() - pubDate.getTime()) / (1000 * 60 * 60 * 24)))
+    const dailyAvg = release.total_downloads / daysSincePublish
+
+    // Distribute across days since publish
+    for (let d = new Date(pubDate); d <= today; d.setDate(d.getDate() + 1)) {
+      const key = d.toISOString().split('T')[0]
+      dailyMap.set(key, (dailyMap.get(key) || 0) + dailyAvg)
+    }
+  }
+
+  const history: import('@/types').DailyDownloadRecord[] = []
+  let maxDaily = 0
+  let maxDailyDate = ''
+
+  // Sort dates
+  const sortedDates = Array.from(dailyMap.keys()).sort()
+  for (const date of sortedDates) {
+    const downloads = Math.round(dailyMap.get(date) || 0)
+    history.push({ date, downloads })
+    if (downloads > maxDaily) {
+      maxDaily = downloads
+      maxDailyDate = date
+    }
+  }
+
+  return { history, maxDaily, maxDailyDate }
+}
+
 export async function fetchIssueHealth(
   owner: string,
   repo: string,

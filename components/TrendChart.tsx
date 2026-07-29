@@ -102,8 +102,11 @@ export function TrendChart({
                 fontSize: '12px',
                 fontFamily: 'var(--font-family-mono)',
               }}
-              labelFormatter={(value) => new Date(value).toLocaleDateString('zh-CN')}
-              formatter={(value: number) => [value.toLocaleString(), 'Stars']}
+              labelFormatter={(value: unknown) => {
+                const v = value as string | number
+                return new Date(v).toLocaleDateString('zh-CN')
+              }}
+              formatter={(value: unknown) => [String(value), 'Stars']}
             />
             <Line
               type="monotone"

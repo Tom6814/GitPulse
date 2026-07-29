@@ -14,23 +14,24 @@ export function DeveloperVitals({ issueHealth, repo }: DeveloperVitalsProps) {
 
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-      <div className="ds-statcard hover:border-[#32F08C]/40 transition">
+      <div className="ds-statcard group hover:border-[#32F08C]/40 hover:translate-y-[-2px] transition-all duration-300 relative overflow-hidden">
+        <div className="absolute top-0 left-0 right-0 h-[3px] bg-gradient-to-r from-[#33C192] to-[#32F08C]" />
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-3">
-            <div className="w-8 h-8 rounded-lg bg-[#33C192]/15 flex items-center justify-center">
-              <CheckCircle2 className="w-4 h-4 text-[#33C192]" />
+            <div className="w-9 h-9 rounded-lg bg-[#33C192]/15 flex items-center justify-center">
+              <CheckCircle2 className="w-4.5 h-4.5 text-[#33C192]" />
             </div>
             <h4 className="text-xs font-mono uppercase tracking-wider text-[#D1D3DB] font-semibold">
               Issue 解决率
             </h4>
           </div>
-          <span className="text-xs font-mono font-bold text-[#33C192]">
+          <span className="text-xs font-mono font-bold text-[#33C192] tabular-nums">
             {resolutionPercentage}%
           </span>
         </div>
 
         <div className="space-y-1">
-          <div className="text-2xl font-mono font-bold text-[#D1D3DB]">
+          <div className="text-xl md:text-2xl font-mono font-bold text-[#D1D3DB] tabular-nums">
             {issueHealth.closedIssuesEstimate.toLocaleString()}
             <span className="text-xs font-normal text-[#666B75] ml-1">已关闭</span>
           </div>
@@ -39,24 +40,25 @@ export function DeveloperVitals({ issueHealth, repo }: DeveloperVitalsProps) {
           </p>
         </div>
 
-        <div className="w-full bg-[#1A1B1D] rounded-full h-1.5 overflow-hidden">
+        <div className="w-full bg-[#1A1B1D] rounded-full h-2 md:h-1.5 overflow-hidden">
           <div
-            className="bg-[#33C192] h-full rounded-full transition-all duration-500"
+            className="bg-[#33C192] h-full rounded-full transition-all duration-500 shadow-[0_0_8px_rgba(51,193,146,0.5)]"
             style={{ width: `${resolutionPercentage}%` }}
           />
         </div>
 
         <div className="pt-2 border-t border-[var(--border-neutral-l1)] flex items-center justify-between text-[11px] font-mono text-[#9599A6]">
           <span>平均关闭耗时:</span>
-          <span className="text-[#D1D3DB] font-semibold">{issueHealth.avgDaysToCloseIssue} 天</span>
+          <span className="text-[#D1D3DB] font-semibold tabular-nums">{issueHealth.avgDaysToCloseIssue} 天</span>
         </div>
       </div>
 
-      <div className="ds-statcard hover:border-[#32F08C]/40 transition">
+      <div className="ds-statcard group hover:border-[#32F08C]/40 hover:translate-y-[-2px] transition-all duration-300 relative overflow-hidden">
+        <div className="absolute top-0 left-0 right-0 h-[3px] bg-gradient-to-r from-[#387BFF] to-[#5B9BFF]" />
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-3">
-            <div className="w-8 h-8 rounded-lg bg-[#387BFF]/15 flex items-center justify-center">
-              <GitPullRequest className="w-4 h-4 text-[#387BFF]" />
+            <div className="w-9 h-9 rounded-lg bg-[#387BFF]/15 flex items-center justify-center">
+              <GitPullRequest className="w-4.5 h-4.5 text-[#387BFF]" />
             </div>
             <h4 className="text-xs font-mono uppercase tracking-wider text-[#D1D3DB] font-semibold">
               PR 合并效率
@@ -68,7 +70,7 @@ export function DeveloperVitals({ issueHealth, repo }: DeveloperVitalsProps) {
         </div>
 
         <div className="space-y-1">
-          <div className="text-2xl font-mono font-bold text-[#D1D3DB]">
+          <div className="text-xl md:text-2xl font-mono font-bold text-[#D1D3DB] tabular-nums">
             {issueHealth.avgDaysToClosePr}
             <span className="text-xs font-normal text-[#666B75] ml-1">天平均合并</span>
           </div>
@@ -79,15 +81,16 @@ export function DeveloperVitals({ issueHealth, repo }: DeveloperVitalsProps) {
 
         <div className="pt-2 border-t border-[var(--border-neutral-l1)] flex items-center justify-between text-[11px] font-mono text-[#9599A6]">
           <span>停滞 Issue 占比:</span>
-          <span className="text-[var(--status-warning-default)] font-semibold">{issueHealth.staleIssuesPercentage}%</span>
+          <span className="text-[var(--status-warning-default)] font-semibold tabular-nums">{issueHealth.staleIssuesPercentage}%</span>
         </div>
       </div>
 
-      <div className="ds-statcard hover:border-[#32F08C]/40 transition">
+      <div className="ds-statcard group hover:border-[#32F08C]/40 hover:translate-y-[-2px] transition-all duration-300 relative overflow-hidden">
+        <div className="absolute top-0 left-0 right-0 h-[3px] bg-gradient-to-r from-[#32F08C] to-[#7BF5B8]" />
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-3">
-            <div className="w-8 h-8 rounded-lg bg-[#32F08C]/15 flex items-center justify-center">
-              <Activity className="w-4 h-4 text-[#32F08C]" />
+            <div className="w-9 h-9 rounded-lg bg-[#32F08C]/15 flex items-center justify-center">
+              <Activity className="w-4.5 h-4.5 text-[#32F08C]" />
             </div>
             <h4 className="text-xs font-mono uppercase tracking-wider text-[#D1D3DB] font-semibold">
               代码提交动态
@@ -99,7 +102,7 @@ export function DeveloperVitals({ issueHealth, repo }: DeveloperVitalsProps) {
         </div>
 
         <div className="space-y-1">
-          <div className="text-2xl font-mono font-bold text-[#D1D3DB] flex items-baseline space-x-1">
+          <div className="text-xl md:text-2xl font-mono font-bold text-[#D1D3DB] flex items-baseline space-x-1">
             <span>主分支</span>
             <span className="text-sm text-[#32F08C] font-mono font-normal">/{repo.default_branch}</span>
           </div>
@@ -110,27 +113,28 @@ export function DeveloperVitals({ issueHealth, repo }: DeveloperVitalsProps) {
 
         <div className="pt-2 border-t border-[var(--border-neutral-l1)] flex items-center justify-between text-[11px] font-mono text-[#9599A6]">
           <span>订阅关注数:</span>
-          <span className="text-[#D1D3DB] font-semibold">{repo.watchers_count.toLocaleString()}</span>
+          <span className="text-[#D1D3DB] font-semibold tabular-nums">{repo.watchers_count.toLocaleString()}</span>
         </div>
       </div>
 
-      <div className="ds-statcard hover:border-[#32F08C]/40 transition">
+      <div className="ds-statcard group hover:border-[#32F08C]/40 hover:translate-y-[-2px] transition-all duration-300 relative overflow-hidden">
+        <div className="absolute top-0 left-0 right-0 h-[3px] bg-gradient-to-r from-[#B38CFF] to-[#D4B8FF]" />
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-3">
-            <div className="w-8 h-8 rounded-lg bg-[#B38CFF]/15 flex items-center justify-center">
-              <HardDrive className="w-4 h-4 text-[#B38CFF]" />
+            <div className="w-9 h-9 rounded-lg bg-[#B38CFF]/15 flex items-center justify-center">
+              <HardDrive className="w-4.5 h-4.5 text-[#B38CFF]" />
             </div>
             <h4 className="text-xs font-mono uppercase tracking-wider text-[#D1D3DB] font-semibold">
               代码库体积
             </h4>
           </div>
-          <span className="text-xs font-mono font-bold text-[#B38CFF]">
+          <span className="text-xs font-mono font-bold text-[#B38CFF] tabular-nums">
             {sizeMb} MB
           </span>
         </div>
 
         <div className="space-y-1">
-          <div className="text-2xl font-mono font-bold text-[#D1D3DB] truncate">
+          <div className="text-xl md:text-2xl font-mono font-bold text-[#D1D3DB] truncate">
             {repo.license?.spdx_id || 'Custom'}
           </div>
           <p className="text-xs text-[#9599A6]">

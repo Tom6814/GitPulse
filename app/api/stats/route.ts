@@ -7,9 +7,13 @@ import {
   fetchContributors,
   fetchCommunityHealthScore,
   fetchIssueHealth,
+  fetchReadme,
+  fetchContributing,
+  fetchCommitActivity,
+  estimateDailyDownloads,
 } from '@/lib/github'
 import { calculateStarStats, calculateDownloadStats } from '@/lib/stats'
-import { RepoAnalysisData, AchievementItem } from '@/types'
+import { RepoAnalysisData, AchievementItem, RadarData, HeatmapData, DailyDownloadStats, LanguageMap } from '@/types'
 
 export const dynamic = 'force-dynamic'
 export const maxDuration = 60
@@ -116,6 +120,86 @@ function generateAchievements(
   ]
 }
 
+function normalizeRadarValue(value: number, cap: number): number {
+  return Math.min(100, Math.round((value / cap) * 100))
+}
+
+function buildRadarData(
+  totalStars: number,
+  forks: number,
+  contributorCount: number,
+  recentNewStars: number,
+  recentPushes: number,
+  totalDownloads: number
+): RadarData {
+  const rawValues = [totalStars, contributorCount, forks, recentNewStars, recentPushes, totalDownloads]
+  const caps = [1000, 20, 100, 10, 20, 10000]
+  const values = rawValues.map((v, i) => normalizeRadarValue(v, caps[i]))
+
+  return {
+    axes: ['Stars', 'Contributors', 'Forks', 'New Stars', 'New Pushes', 'Downloads'],
+    values,
+    rawValues,
+  }
+}
+
+function buildHeatmapData(commitWeeks: { days: number[]; week: number }[]): HeatmapData {
+  const cells: HeatmapData['cells'] = []
+  let maxDaily = 1
+
+  const now = new Date()
+  const oneYearAgo = new Date(now)
+  oneYearAgo.setFullYear(oneYearAgo.getFullYear() - 1)
+  oneYearAgo.setHours(0, 0, 0, 0)
+
+  // Fill in all dates from one year ago
+  const dateMap = new Map<string, number>()
+  for (const week of commitWeeks) {
+    const weekStart = new Date((week.week || 0) * 1000)
+    for (let i = 0; i < 7; i++) {
+      const d = new Date(weekStart)
+      d.setDate(d.getDate() + i)
+      const key = d.toISOString().split('T')[0]
+      const count = week.days?.[i] || 0
+      dateMap.set(key, (dateMap.get(key) || 0) + count)
+    }
+  }
+
+  for (let d = new Date(oneYearAgo); d <= now; d.setDate(d.getDate() + 1)) {
+    const key = d.toISOString().split('T')[0]
+    const count = dateMap.get(key) || 0
+    if (count > maxDaily) maxDaily = count
+
+    let level: HeatmapData['cells'][0]['level'] = 0
+    if (count > 0) {
+      const ratio = count / Math.max(maxDaily, 1)
+      if (ratio > 0.75) level = 4
+      else if (ratio > 0.5) level = 3
+      else if (ratio > 0.25) level = 2
+      else level = 1
+    }
+
+    cells.push({ date: key, count, level })
+  }
+
+  // Recalculate levels after we know true maxDaily
+  for (const cell of cells) {
+    if (cell.count > 0) {
+      const ratio = cell.count / Math.max(maxDaily, 1)
+      if (ratio > 0.75) cell.level = 4
+      else if (ratio > 0.5) cell.level = 3
+      else if (ratio > 0.25) cell.level = 2
+      else cell.level = 1
+    }
+  }
+
+  return {
+    cells,
+    totalCommits: cells.reduce((sum, c) => sum + c.count, 0),
+    maxDaily,
+  }
+}
+
 export async function GET() {
   try {
     const repoName = process.env.GITHUB_REPO || 'vercel/next.js'
@@ -125,13 +209,33 @@ export async function GET() {
       return NextResponse.json({ error: 'Invalid GITHUB_REPO format' }, { status: 400 })
     }
 
-    const [repoData, releases, languages, contributors, communityHealthScore] = await Promise.all([
+    const [
+      repoData,
+      releases,
+      languagesRaw,
+      contributors,
+      communityHealthScore,
+      readme,
+      contributing,
+      commitActivity,
+    ] = await Promise.all([
       fetchRepo(owner, repo),
       fetchReleases(owner, repo),
       fetchLanguages(owner, repo).catch(() => ({})),
       fetchContributors(owner, repo).catch(() => []),
       fetchCommunityHealthScore(owner, repo).catch(() => 85),
+      fetchReadme(owner, repo).catch(() => null),
+      fetchContributing(owner, repo).catch(() => null),
+      fetchCommitActivity(owner, repo).catch(() => []),
     ])
+
+    // Filter out brainfuck misidentification (.b = Java/Kotlin/JS service registry, not brainfuck)
+    const languages: LanguageMap = {}
+    for (const [lang, bytes] of Object.entries(languagesRaw)) {
+      if (lang.toLowerCase() !== 'brainfuck') {
+        languages[lang] = bytes as number
+      }
+    }
 
     const [starResult, issueHealth] = await Promise.all([
       fetchStargazerEvents(owner, repo, repoData.stargazers_count),
@@ -147,6 +251,40 @@ export async function GET() {
       stars: h.totalStars,
       dailyVelocity: h.dailyGrowth,
     }))
+
+    // Recent new stars (last 30 days)
+    const recentStars = stars.history.slice(-30).reduce((sum, h) => sum + h.dailyGrowth, 0)
+
+    // Recent pushes from commit activity (last 4 weeks)
+    const recentPushes = (commitActivity || []).slice(-4).reduce(
+      (sum, w) => sum + (w.total || 0),
+      0
+    )
+
+    // Build radar & heatmap
+    const radar = buildRadarData(
+      repoData.stargazers_count,
+      repoData.forks_count,
+      contributors.length,
+      recentStars,
+      recentPushes,
+      totalReleaseDownloads
+    )
+
+    const heatmap = buildHeatmapData(commitActivity || [])
+
+    // Daily download estimation
+    const { history: ddHistory, maxDaily: ddMax, maxDailyDate } = estimateDailyDownloads(releases)
+    const todayStr = new Date().toISOString().split('T')[0]
+    const todayEntry = ddHistory.find(h => h.date === todayStr)
+    const dailyDownloads: DailyDownloadStats = {
+      total: totalReleaseDownloads,
+      today: todayEntry?.downloads || 0,
+      history: ddHistory,
+      maxDaily: ddMax,
+      maxDailyDate,
+      latestReleaseDate: releases[0]?.published_at || '',
+    }
 
     const achievements = generateAchievements(
       repoData.stargazers_count,
@@ -180,6 +318,11 @@ export async function GET() {
       lastUpdated: new Date().toISOString(),
       isFallbackData: false,
       rateLimitRemaining: 0,
+      radar,
+      heatmap,
+      dailyDownloads,
+      readme,
+      contributing,
     }
 
     return NextResponse.json(stats)
