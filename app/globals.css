@@ -214,6 +214,10 @@ body {
   from { transform: translateX(100%); opacity: 0; }
   to { transform: translateX(0); opacity: 1; }
 }
+@keyframes slide-in-down {
+  from { transform: translateY(-12px); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
+}
 @keyframes number-bounce {
   0%, 100% { transform: scale(1); }
   50% { transform: scale(1.05); }
@@ -223,6 +227,9 @@ body {
 }
 .animate-slide-in {
   animation: slide-in-right 400ms ease-out;
+}
+.animate-slide-in-down {
+  animation: slide-in-down 350ms ease-out;
 }
 .animate-number-bounce {
   animation: number-bounce 300ms ease-out;

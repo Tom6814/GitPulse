@@ -5,6 +5,7 @@ import useSWR from 'swr'
 import {
   Activity, Star, GitFork, GitPullRequest, AlertCircle, GitCommit,
   Tag, MessageSquare, RefreshCw, Radio, Volume2, VolumeX, X, ExternalLink,
+  Inbox,
 } from 'lucide-react'
 import { RealGitHubEvent } from '@/types'
 import clsx from 'clsx'
@@ -70,19 +71,23 @@ function playBeep() {
 
 function timeAgo(isoDate: string): string {
   const diff = Date.now() - new Date(isoDate).getTime()
-  const mins = Math.floor(diff / 60000)
-  if (mins < 1) return '刚刚'
+  const secs = Math.floor(diff / 1000)
+  if (secs < 10) return '刚刚'
+  if (secs < 60) return `${secs} 秒前`
+  const mins = Math.floor(secs / 60)
   if (mins < 60) return `${mins} 分钟前`
   const hours = Math.floor(mins / 60)
   if (hours < 24) return `${hours} 小时前`
   const days = Math.floor(hours / 24)
-  return `${days} 天前`
+  if (days < 7) return `${days} 天前`
+  return new Date(isoDate).toLocaleDateString('zh-CN', { month: 'short', day: 'numeric' })
 }
 
 export function LiveTelemetryFeed({ repoFullName, soundEnabled, onToggleSound }: LiveTelemetryFeedProps) {
   const [isLiveMonitoring, setIsLiveMonitoring] = useState(true)
   const [activeToast, setActiveToast] = useState<RealGitHubEvent | null>(null)
   const [events, setEvents] = useState<RealGitHubEvent[]>([])
+  const [freshIds, setFreshIds] = useState<Set<string>>(new Set())
   const seenEventIdsRef = useRef<Set<string>>(new Set())
   const isFirstLoadRef = useRef(true)
 
@@ -108,6 +113,8 @@ export function LiveTelemetryFeed({ repoFullName, soundEnabled, onToggleSound }:
       const merged = [...freshEvents, ...prev].slice(0, 30)
       return merged
     })
+
+    setFreshIds(new Set(freshEvents.map(e => e.id)))
 
     if (!isFirstLoadRef.current && soundEnabled) {
       playBeep()
@@ -141,7 +148,7 @@ export function LiveTelemetryFeed({ repoFullName, soundEnabled, onToggleSound }:
   return (
     <>
       {activeToast && (
-        <div className="fixed bottom-6 right-6 z-50 max-w-sm animate-slide-in">
+        <div className="fixed bottom-6 left-4 right-4 sm:left-auto sm:right-6 z-50 sm:max-w-sm animate-slide-in">
           <div className="bg-[#222427] border border-[#32F08C]/40 rounded-lg shadow-2xl p-4 flex items-start gap-3">
             <div className="w-9 h-9 rounded-full bg-[var(--bg-brand-popup)] border border-[rgba(50,240,140,0.3)] flex items-center justify-center shrink-0">
               {eventIcons[activeToast.eventType] || <Activity className="w-4 h-4 text-[#32F08C]" />}
@@ -151,7 +158,7 @@ export function LiveTelemetryFeed({ repoFullName, soundEnabled, onToggleSound }:
                 <img
                   src={activeToast.actor.avatar_url}
                   alt={activeToast.actor.login}
-                  className="w-4 h-4 rounded-full"
+                  className="w-4 h-4 rounded-full ring-1 ring-[#32F08C]/30"
                 />
                 <span className="text-xs font-mono font-bold text-[#32F08C]">{activeToast.actor.login}</span>
                 <span className="text-[10px] text-[#666B75]">{timeAgo(activeToast.created_at)}</span>
@@ -182,7 +189,7 @@ export function LiveTelemetryFeed({ repoFullName, soundEnabled, onToggleSound }:
         </div>
       )}
 
-      <div className="bg-[#222427] border border-[var(--border-neutral-l1)] rounded-[10px] p-5 sm:p-6 shadow-xl">
+      <div className="bg-[#222427] border border-[var(--border-neutral-l1)] rounded-[10px] p-4 sm:p-6 shadow-xl">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4 border-b border-[var(--border-neutral-l1)] pb-4">
           <div className="flex items-center gap-3">
             <div className="relative">
@@ -214,7 +221,7 @@ export function LiveTelemetryFeed({ repoFullName, soundEnabled, onToggleSound }:
           <div className="flex items-center gap-2">
             <button
               onClick={onToggleSound}
-              className="p-1.5 rounded-md bg-[var(--bg-overlay-l2)] hover:bg-[var(--bg-overlay-l3)] border border-[var(--border-neutral-l1)] transition"
+              className="p-2.5 sm:p-1.5 rounded-md bg-[var(--bg-overlay-l2)] hover:bg-[var(--bg-overlay-l3)] border border-[var(--border-neutral-l1)] transition"
               title={soundEnabled ? '关闭声音' : '开启声音'}
             >
               {soundEnabled ? <Volume2 className="w-4 h-4 text-[#32F08C]" /> : <VolumeX className="w-4 h-4 text-[#666B75]" />}
@@ -223,7 +230,7 @@ export function LiveTelemetryFeed({ repoFullName, soundEnabled, onToggleSound }:
             <button
               onClick={handleManualRefresh}
               disabled={isLoading}
-              className="p-1.5 rounded-md bg-[var(--bg-overlay-l2)] hover:bg-[var(--bg-overlay-l3)] border border-[var(--border-neutral-l1)] transition disabled:opacity-50"
+              className="p-2.5 sm:p-1.5 rounded-md bg-[var(--bg-overlay-l2)] hover:bg-[var(--bg-overlay-l3)] border border-[var(--border-neutral-l1)] transition disabled:opacity-50"
               title="手动刷新"
             >
               <RefreshCw className={clsx('w-4 h-4 text-[#D1D3DB]', isLoading && 'animate-spin')} />
@@ -232,7 +239,7 @@ export function LiveTelemetryFeed({ repoFullName, soundEnabled, onToggleSound }:
             <button
               onClick={() => setIsLiveMonitoring(prev => !prev)}
               className={clsx(
-                'flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-mono font-bold border transition',
+                'flex items-center gap-1.5 px-3 py-2.5 sm:py-1.5 rounded-md text-xs font-mono font-bold border transition',
                 isLiveMonitoring
                   ? 'bg-[var(--bg-brand-popup)] border-[#32F08C] text-[#32F08C]'
                   : 'bg-[var(--bg-overlay-l2)] border-[var(--border-neutral-l1)] text-[#D1D3DB]'
@@ -252,20 +259,35 @@ export function LiveTelemetryFeed({ repoFullName, soundEnabled, onToggleSound }:
         )}
 
         {events.length === 0 ? (
-          <div className="flex flex-col items-center justify-center py-12 text-center">
-            <Activity className="w-8 h-8 text-[#32F08C] animate-spin mb-3" />
-            <p className="text-xs font-mono text-[#9599A6]">
-              {isLoading ? '正在从 GitHub Events API 获取最新实时遥测数据...' : '暂无实时动态数据'}
-            </p>
+          <div className="flex flex-col items-center justify-center py-14 text-center">
+            {isLoading ? (
+              <>
+                <Activity className="w-10 h-10 text-[#32F08C] animate-spin mb-4" />
+                <p className="text-xs font-mono text-[#9599A6]">
+                  正在从 GitHub Events API 获取最新实时遥测数据...
+                </p>
+              </>
+            ) : (
+              <>
+                <div className="w-16 h-16 rounded-2xl bg-[var(--bg-overlay-l2)] border border-[var(--border-neutral-l1)] flex items-center justify-center mb-4">
+                  <Inbox className="w-8 h-8 text-[#666B75]" />
+                </div>
+                <p className="text-sm font-mono font-bold text-[#D1D3DB] mb-1.5">暂无实时动态</p>
+                <p className="text-[11px] font-mono text-[#666B75] max-w-xs leading-relaxed">
+                  当仓库有新的 star、fork、PR 或 issue 活动时，事件将实时显示在这里
+                </p>
+              </>
+            )}
           </div>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-2.5 max-h-80 overflow-y-auto pr-1">
+          <div className="grid grid-cols-1 gap-2.5 max-h-80 overflow-y-auto pr-1">
             {events.map(evt => (
               <div
                 key={evt.id}
                 className={clsx(
-                  'flex items-start gap-2.5 p-2.5 bg-[#1A1B1D] border border-[var(--border-neutral-l1)] border-l-2 rounded-md hover:border-[var(--border-neutral-l2)] transition',
-                  eventBorderColors[evt.eventType]
+                  'flex items-start gap-2.5 p-2.5 bg-[#1A1B1D] border border-[var(--border-neutral-l1)] border-l-[3px] rounded-md hover:bg-[#1F2023] hover:border-[var(--border-neutral-l2)] transition',
+                  eventBorderColors[evt.eventType],
+                  freshIds.has(evt.id) && 'animate-slide-in-down'
                 )}
               >
                 <div className="w-7 h-7 rounded bg-[var(--bg-overlay-l2)] flex items-center justify-center shrink-0 mt-0.5">
@@ -277,7 +299,7 @@ export function LiveTelemetryFeed({ repoFullName, soundEnabled, onToggleSound }:
                     <img
                       src={evt.actor.avatar_url}
                       alt={evt.actor.login}
-                      className="w-3.5 h-3.5 rounded-full"
+                      className="w-3.5 h-3.5 rounded-full ring-1 ring-[#32F08C]/20"
                     />
                     <a
                       href={evt.actor.html_url}
@@ -313,7 +335,7 @@ export function LiveTelemetryFeed({ repoFullName, soundEnabled, onToggleSound }:
         {events.length > 0 && (
           <div className="mt-3 pt-3 border-t border-[var(--border-neutral-l1)] flex items-center justify-between text-[10px] font-mono text-[#666B75]">
             <span>共 {events.length} 条事件 · 已持久化到 Supabase</span>
-            <span>事件类型: star · fork · pr · issue · push · release · comment</span>
+            <span className="hidden sm:inline">事件类型: star · fork · pr · issue · push · release · comment</span>
           </div>
         )}
       </div>
