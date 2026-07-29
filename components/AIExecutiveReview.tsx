@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect, useRef } from 'react'
+import ReactMarkdown from 'react-markdown'
 import {
   Sparkles, AlertTriangle, RefreshCw, Zap, CheckCircle2,
   Terminal, MessageSquare, Send, Loader2, User, Trash2,
@@ -318,26 +319,23 @@ export function AIExecutiveReview({ data }: AIExecutiveReviewProps) {
         </div>
       ) : activeReview ? (
         <div className="space-y-4">
-          <div className="p-5 bg-[#1A1B1D] border border-[var(--border-neutral-l2)] rounded-md flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-            <div className="space-y-1">
-              <div className="flex items-center space-x-2">
-                <span className="text-xs font-mono uppercase tracking-wider text-[#32F08C] font-bold">
-                  项目性格画像
-                </span>
-                <span className="text-[#666B75]">•</span>
-                <span className="text-xs font-mono text-[#9599A6]">{activeReview.oneLineSummary}</span>
-              </div>
-              <h4 className="text-xl sm:text-2xl font-bold font-mono text-[#D1D3DB]">
+          <div className="p-5 bg-[#1A1B1D] border border-[var(--border-neutral-l2)] rounded-md flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
+            <div className="space-y-2 flex-1 min-w-0">
+              <span className="inline-block text-[10px] font-mono uppercase tracking-wider text-[#32F08C] font-bold bg-[var(--bg-brand-popup)] border border-[rgba(50,240,140,0.2)] px-2 py-0.5 rounded">
+                项目性格画像
+              </span>
+              <h4 className="text-2xl sm:text-3xl font-bold font-mono text-[#D1D3DB] leading-tight">
                 &ldquo;{activeReview.projectPersonality}&rdquo;
               </h4>
+              <p className="text-xs text-[#9599A6] leading-relaxed">{activeReview.oneLineSummary}</p>
             </div>
 
-            <div className="flex items-center space-x-3 shrink-0 self-start sm:self-auto">
+            <div className="flex items-center space-x-3 shrink-0">
               <div className="text-right">
-                <div className="text-[10px] font-mono uppercase text-[#666B75]">评级结果</div>
-                <div className="text-xs font-mono text-[#32F08C]">{activeReview.healthScore} / 100 健康评分</div>
+                <div className="text-[10px] font-mono uppercase text-[#666B75]">健康评分</div>
+                <div className="text-lg font-mono font-bold text-[#32F08C]">{activeReview.healthScore}<span className="text-xs text-[#666B75]">/100</span></div>
               </div>
-              <div className="px-4 py-1.5 bg-[#32F08C] text-[#0C0C0D] font-black text-2xl font-mono rounded">
+              <div className="px-4 py-2 bg-[#32F08C] text-[#0C0C0D] font-black text-2xl font-mono rounded shadow-md">
                 {activeReview.grade}
               </div>
             </div>
@@ -455,13 +453,48 @@ export function AIExecutiveReview({ data }: AIExecutiveReviewProps) {
                 )}
                 <div
                   className={clsx(
-                    'p-3 rounded-lg max-w-[85%] leading-relaxed',
+                    'p-3 rounded-lg max-w-[85%] leading-relaxed overflow-x-auto',
                     msg.role === 'user'
                       ? 'bg-[#32F08C] text-[#0C0C0D] font-medium'
                       : 'bg-[#222427] border border-[var(--border-neutral-l2)] text-[#D1D3DB]'
                   )}
                 >
-                  <div className="text-xs leading-relaxed whitespace-pre-wrap">{msg.content}</div>
+                  <div className="text-xs leading-relaxed markdown-chat-body">
+                    <ReactMarkdown
+                      components={{
+                        p: ({ children }) => <p className="mb-1.5 last:mb-0 leading-relaxed">{children}</p>,
+                        ul: ({ children }) => <ul className="list-disc list-inside space-y-0.5 my-1.5 pl-1">{children}</ul>,
+                        ol: ({ children }) => <ol className="list-decimal list-inside space-y-0.5 my-1.5 pl-1">{children}</ol>,
+                        li: ({ children }) => <li className="leading-snug">{children}</li>,
+                        strong: ({ children }) => <strong className="font-bold">{children}</strong>,
+                        em: ({ children }) => <em className="italic">{children}</em>,
+                        code: ({ children, className: codeClassName }) => {
+                          const isInline = !codeClassName || !codeClassName.includes('language-')
+                          return isInline ? (
+                            <code className="px-1 py-0.5 rounded text-[11px] font-mono bg-[#28c573] text-[#0c0c0d]">{children}</code>
+                          ) : (
+                            <pre className="p-2 my-1.5 rounded bg-[#151618] border border-[var(--border-neutral-l1)] font-mono text-[11px] text-[#32F08C] overflow-x-auto whitespace-pre">
+                              <code>{children}</code>
+                            </pre>
+                          )
+                        },
+                        table: ({ children }) => (
+                          <table className="my-2 border-collapse text-[11px] w-full">{children}</table>
+                        ),
+                        thead: ({ children }) => <thead className="bg-[var(--bg-overlay-l2)]">{children}</thead>,
+                        th: ({ children }) => <th className="border border-[var(--border-neutral-l2)] px-2 py-1 text-left font-bold">{children}</th>,
+                        td: ({ children }) => <td className="border border-[var(--border-neutral-l1)] px-2 py-1">{children}</td>,
+                        blockquote: ({ children }) => (
+                          <blockquote className="border-l-2 border-[#32F08C] pl-2 my-1 italic opacity-80">{children}</blockquote>
+                        ),
+                        a: ({ href, children }) => (
+                          <a href={href} target="_blank" rel="noopener noreferrer" className="underline hover:opacity-80 font-semibold">{children}</a>
+                        ),
+                      }}
+                    >
+                      {msg.content}
+                    </ReactMarkdown>
+                  </div>
                   <div className={clsx('text-[9px] mt-1 text-right opacity-60', msg.role === 'user' ? 'text-[#0C0C0D]' : 'text-[#666B75]')}>
                     {msg.timestamp}
                   </div>

@@ -41,14 +41,9 @@ export function HeroCard({
         </div>
       )}
 
-      <div className="relative z-10 mb-4 inline-flex items-center space-x-2 px-2.5 py-1 bg-[var(--bg-brand-popup)] border border-[rgba(50,240,140,0.2)] rounded-full text-xs font-mono text-[#32F08C]">
-        <span className="w-2 h-2 rounded-full bg-[#32F08C] animate-pulse" />
-        <span className="font-semibold">专属项目监控控制台: {repo.full_name}</span>
-      </div>
-
       <div className="relative z-10 flex flex-col lg:flex-row lg:items-start lg:justify-between gap-6">
-        <div className="flex items-start space-x-4 flex-1 min-w-0">
-          <div className="relative w-16 h-16 sm:w-20 sm:h-20 rounded-lg overflow-hidden border border-[var(--border-neutral-l2)] bg-[#1A1B1D] shrink-0 shadow-md">
+        <div className="flex items-start space-x-4 sm:space-x-5 flex-1 min-w-0">
+          <div className="relative w-20 h-20 sm:w-24 sm:h-24 rounded-xl overflow-hidden border border-[var(--border-neutral-l2)] bg-[#1A1B1D] shrink-0 shadow-md">
             <Image
               src={repo.owner.avatar_url}
               alt={repo.owner.login}

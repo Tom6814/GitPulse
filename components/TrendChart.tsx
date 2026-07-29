@@ -23,7 +23,7 @@ const timeRanges: { label: string; value: TimeRange }[] = [
 export function TrendChart({
   data,
   title,
-  color = '#3fb950',
+  color = '#32F08C',
   showAllOption = false,
   sampled = false,
   sampledReason,
@@ -38,28 +38,29 @@ export function TrendChart({
     return data.slice(-days)
   })()
 
-  const step = Math.max(1, Math.floor(filteredData.length / 12))
+  const maxTicks = selectedRange === '7d' ? 7 : selectedRange === '30d' ? 6 : selectedRange === '90d' ? 8 : 10
+  const tickInterval = Math.max(0, Math.ceil(filteredData.length / maxTicks) - 1)
 
   return (
-    <div className="bg-bg-secondary rounded-xl p-6 border border-bg-tertiary">
-      <div className="flex items-center justify-between mb-4 flex-wrap gap-2">
+    <div className="bg-[#222427] border border-[var(--border-neutral-l1)] rounded-[10px] p-5 shadow-xl">
+      <div className="flex items-center justify-between mb-4 flex-wrap gap-2 border-b border-[var(--border-neutral-l1)] pb-3">
         <div className="flex items-center gap-2">
-          <h3 className="font-medium text-text-primary">{title}</h3>
+          <h3 className="text-xs font-mono uppercase tracking-wider text-[#D1D3DB] font-semibold">{title}</h3>
           {sampled && (
-            <span className="text-xs text-accent-orange bg-accent-orange/10 px-2 py-0.5 rounded-full" title={sampledReason}>
-              采样数据
+            <span className="text-[10px] font-mono text-[var(--status-warning-default)] bg-[var(--status-warning-surface-l1)] px-2 py-0.5 rounded-full border border-[var(--status-warning-surface-l2)]" title={sampledReason}>
+              采样
             </span>
           )}
         </div>
-        <div className="flex items-center gap-1 bg-bg-tertiary rounded-lg p-1">
+        <div className="flex items-center gap-1 bg-[var(--bg-overlay-l1)] rounded-md p-0.5">
           {ranges.map(range => (
             <button
               key={range.value}
               onClick={() => setSelectedRange(range.value)}
-              className={`px-3 py-1 text-sm rounded-md transition-colors ${
+              className={`px-3 py-1 text-xs font-mono rounded transition ${
                 selectedRange === range.value
-                  ? 'bg-bg-secondary text-text-primary'
-                  : 'text-text-secondary hover:text-text-primary'
+                  ? 'bg-[var(--bg-brand-popup)] text-[#32F08C] font-semibold border border-[rgba(50,240,140,0.2)]'
+                  : 'text-[#9599A6] hover:text-[#D1D3DB]'
               }`}
             >
               {range.label}
@@ -69,33 +70,40 @@ export function TrendChart({
       </div>
 
       {sampled && sampledReason && (
-        <p className="text-xs text-text-secondary mb-3">{sampledReason}</p>
+        <p className="text-[10px] text-[#9599A6] mb-3 font-mono">{sampledReason}</p>
       )}
 
-      <div className="h-[240px]">
+      <div className="h-[260px]">
         <ResponsiveContainer width="100%" height="100%">
-          <LineChart data={filteredData}>
-            <CartesianGrid strokeDasharray="3 3" stroke="#21262d" />
+          <LineChart data={filteredData} margin={{ top: 5, right: 10, bottom: 5, left: 0 }}>
+            <CartesianGrid strokeDasharray="3 3" stroke="rgba(224,226,242,0.06)" />
             <XAxis
               dataKey="date"
-              stroke="#8b949e"
-              fontSize={12}
-              interval={step - 1}
+              stroke="#666B75"
+              fontSize={11}
+              interval={tickInterval}
               tickFormatter={(value) => {
                 const d = new Date(value)
-                return `${d.getFullYear()}/${d.getMonth() + 1}/${d.getDate()}`
+                return `${d.getMonth() + 1}/${d.getDate()}`
               }}
             />
-            <YAxis stroke="#8b949e" fontSize={12} />
+            <YAxis
+              stroke="#666B75"
+              fontSize={11}
+              width={45}
+              tickCount={8}
+            />
             <Tooltip
               contentStyle={{
-                backgroundColor: '#161b22',
-                border: '1px solid #21262d',
+                backgroundColor: '#1A1B1D',
+                border: '1px solid var(--border-neutral-l2)',
                 borderRadius: '8px',
-                color: '#f0f6fc',
+                color: '#D1D3DB',
+                fontSize: '12px',
+                fontFamily: 'var(--font-family-mono)',
               }}
               labelFormatter={(value) => new Date(value).toLocaleDateString('zh-CN')}
-              formatter={(value: number) => [value.toLocaleString(), '']}
+              formatter={(value: number) => [value.toLocaleString(), 'Stars']}
             />
             <Line
               type="monotone"
@@ -103,7 +111,7 @@ export function TrendChart({
               stroke={color}
               strokeWidth={2}
               dot={false}
-              activeDot={{ r: 4, fill: color }}
+              activeDot={{ r: 4, fill: color, stroke: '#1A1B1D', strokeWidth: 2 }}
             />
           </LineChart>
         </ResponsiveContainer>

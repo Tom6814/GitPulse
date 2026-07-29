@@ -14,18 +14,18 @@ interface StatCardProps {
   suffix?: string
 }
 
-export function StatCard({ 
-  title, 
-  value, 
-  icon, 
-  trend, 
+export function StatCard({
+  title,
+  value,
+  icon,
+  trend,
   trendLabel,
   color = 'green',
-  suffix
+  suffix,
 }: StatCardProps) {
   const [displayValue, setDisplayValue] = useState(value)
   const [isAnimating, setIsAnimating] = useState(false)
-  
+
   useEffect(() => {
     if (value !== displayValue) {
       setIsAnimating(true)
@@ -35,44 +35,40 @@ export function StatCard({
       }, 150)
     }
   }, [value])
-  
-  const colorClasses = {
-    green: 'border-accent-green/30',
-    blue: 'border-accent-blue/30',
-    purple: 'border-accent-purple/30',
-    orange: 'border-accent-orange/30',
+
+  const colorMap = {
+    green: { accent: '#33C192', bg: 'rgba(51,193,146,0.15)' },
+    blue: { accent: '#387BFF', bg: 'rgba(56,123,255,0.15)' },
+    purple: { accent: '#B38CFF', bg: 'rgba(179,140,255,0.15)' },
+    orange: { accent: '#D29D00', bg: 'rgba(210,157,0,0.15)' },
   }
-  
-  const iconBgClasses = {
-    green: 'bg-accent-green/20 text-accent-green',
-    blue: 'bg-accent-blue/20 text-accent-blue',
-    purple: 'bg-accent-purple/20 text-accent-purple',
-    orange: 'bg-accent-orange/20 text-accent-orange',
-  }
-  
+
   const TrendIcon = trend === undefined || trend === 0 ? Minus : trend > 0 ? TrendingUp : TrendingDown
-  const trendColor = trend === undefined || trend === 0 ? 'text-text-secondary' : trend > 0 ? 'text-accent-green' : 'text-accent-red'
-  
+  const trendColor = trend === undefined || trend === 0 ? 'text-[#9599A6]' : trend > 0 ? 'text-[#33C192]' : 'text-[var(--status-error-default)]'
+
   return (
-    <div className={clsx('bg-bg-secondary rounded-xl p-5 border', colorClasses[color])}>
-      <div className="flex items-center justify-between mb-3">
-        <span className="text-text-secondary text-sm">{title}</span>
-        <div className={clsx('p-2 rounded-lg', iconBgClasses[color])}>
+    <div className="ds-statcard bg-[#1A1B1D] border-[var(--border-neutral-l1)] hover:border-[rgba(50,240,140,0.3)] transition-colors">
+      <div className="flex items-center justify-between">
+        <span className="text-[10px] font-mono uppercase tracking-wider text-[#9599A6] font-medium">{title}</span>
+        <div
+          className="w-7 h-7 rounded-lg flex items-center justify-center"
+          style={{ backgroundColor: colorMap[color].bg, color: colorMap[color].accent }}
+        >
           {icon}
         </div>
       </div>
-      
+
       <div className="flex items-end justify-between">
         <div>
-          <span className={clsx('text-3xl font-bold text-text-primary font-mono', isAnimating && 'animate-number-bounce')}>
+          <span className={clsx('font-mono font-variant-numeric tabular-nums text-[22px] font-semibold text-[#D1D3DB]', isAnimating && 'animate-number-bounce')}>
             {displayValue}
           </span>
-          {suffix && <span className="text-lg text-text-secondary ml-1">{suffix}</span>}
+          {suffix && <span className="text-sm text-[#666B75] ml-1">{suffix}</span>}
         </div>
-        
+
         {trend !== undefined && (
-          <div className={clsx('flex items-center gap-1 text-sm', trendColor)}>
-            <TrendIcon className="w-4 h-4" />
+          <div className={clsx('flex items-center gap-1 text-[11px] font-mono', trendColor)}>
+            <TrendIcon className="w-3.5 h-3.5" />
             <span>{trend > 0 ? '+' : ''}{trend}{trendLabel || ''}</span>
           </div>
         )}
