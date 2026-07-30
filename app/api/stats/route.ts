@@ -120,10 +120,6 @@ function generateAchievements(
   ]
 }
 
-function normalizeRadarValue(value: number, cap: number): number {
-  return Math.min(100, Math.round((value / cap) * 100))
-}
-
 function buildRadarData(
   totalStars: number,
   forks: number,
@@ -133,8 +129,9 @@ function buildRadarData(
   totalDownloads: number
 ): RadarData {
   const rawValues = [totalStars, contributorCount, forks, recentNewStars, recentPushes, totalDownloads]
-  const caps = [1000, 20, 100, 10, 20, 10000]
-  const values = rawValues.map((v, i) => normalizeRadarValue(v, caps[i]))
+  // Unified cap: all axes share the same scale → same number = same position
+  const unifiedCap = Math.max(...rawValues, 1)
+  const values = rawValues.map(v => Math.min(100, Math.round((v / unifiedCap) * 100)))
 
   return {
     axes: ['Stars', 'Contributors', 'Forks', 'New Stars', 'New Pushes', 'Downloads'],
