@@ -22,6 +22,8 @@ function getMonthLabel(dateStr: string): string {
   return labels[d.getMonth()]
 }
 
+const DAY_LABELS = ['', '一', '', '三', '', '五', '']
+
 export function Heatmap({ data }: HeatmapProps) {
   if (data.cells.length === 0) {
     return (
@@ -45,45 +47,107 @@ export function Heatmap({ data }: HeatmapProps) {
 
   const cells = data.cells
 
-  // Group by week (7 rows × N columns)
+  // Pad start of first week
   const startDate = new Date(cells[0].date + 'T00:00:00')
   const startDayOfWeek = startDate.getDay()
-
-  // Pad start of first week
   const padStart: typeof cells[number][] = []
   for (let i = 0; i < startDayOfWeek; i++) {
     padStart.push({ date: '', count: 0, level: 0 })
   }
 
   const allCells = [...padStart, ...cells]
+
+  // Group into weeks
   const weeks: (typeof cells)[] = []
   for (let i = 0; i < allCells.length; i += 7) {
-    weeks.push(allCells.slice(i, i + 7))
+    const week = allCells.slice(i, i + 7)
+    // Pad incomplete weeks
+    while (week.length < 7) {
+      week.push({ date: '', count: 0, level: 0 })
+    }
+    weeks.push(week)
   }
 
-  // Month labels - track which week columns start a new month
-  const monthLabels: { label: string; weekIdx: number }[] = []
-  let lastMonth = ''
-  for (let w = 0; w < weeks.length; w++) {
-    for (let d = 0; d < weeks[w].length; d++) {
-      const cell = weeks[w][d]
-      if (cell.date) {
-        const m = getMonthLabel(cell.date)
-        if (m !== lastMonth) {
-          monthLabels.push({ label: m, weekIdx: w })
-          lastMonth = m
+  // Split weeks into 2 bands (first half / second half)
+  const mid = Math.ceil(weeks.length / 2)
+  const bands = [weeks.slice(0, mid), weeks.slice(mid)]
+
+  // Month labels for each band
+  const bandMonthLabels = bands.map(bandWeeks => {
+    const labels: { label: string; weekIdx: number }[] = []
+    let lastMonth = ''
+    for (let w = 0; w < bandWeeks.length; w++) {
+      for (let d = 0; d < bandWeeks[w].length; d++) {
+        const cell = bandWeeks[w][d]
+        if (cell.date) {
+          const m = getMonthLabel(cell.date)
+          if (m !== lastMonth) {
+            labels.push({ label: m, weekIdx: w })
+            lastMonth = m
+          }
+          break
         }
-        break
       }
     }
-  }
+    return labels
+  })
 
-  // Pad end of last week if incomplete
-  const lastWeek = weeks[weeks.length - 1]
-  if (lastWeek && lastWeek.length < 7) {
-    for (let i = lastWeek.length; i < 7; i++) {
-      lastWeek.push({ date: '', count: 0, level: 0 })
-    }
+  function renderBand(bandWeeks: typeof weeks, monthLabels: { label: string; weekIdx: number }[], bandSize: number) {
+    return (
+      <div className="space-y-1">
+        {/* Month labels row */}
+        <div className="flex">
+          <div className="w-5 shrink-0 sm:w-6" />
+          <div className="flex flex-1">
+            {monthLabels.map((ml, i) => {
+              const nextIdx = i + 1 < monthLabels.length ? monthLabels[i + 1].weekIdx : bandWeeks.length
+              const span = Math.max(1, nextIdx - ml.weekIdx)
+              return (
+                <div
+                  key={ml.label}
+                  className="text-[9px] sm:text-[10px] font-mono text-[#9599A6]"
+                  style={{ flex: `0 0 ${(span / bandWeeks.length) * 100}%` }}
+                >
+                  {ml.label}
+                </div>
+              )
+            })}
+          </div>
+        </div>
+
+        {/* Grid: 7 rows × N columns */}
+        <div className="flex">
+          {/* Day labels */}
+          <div className="flex flex-col gap-[3px] w-5 shrink-0 sm:w-6 pt-[1px]">
+            {DAY_LABELS.map((label, i) => (
+              <div key={i} className="flex-1 flex items-center">
+                <span className="text-[8px] sm:text-[9px] font-mono text-[#9599A6] leading-none">
+                  {label}
+                </span>
+              </div>
+            ))}
+          </div>
+
+          {/* Cells */}
+          <div className="flex gap-[3px] flex-1">
+            {bandWeeks.map((week, wi) => (
+              <div key={wi} className="flex flex-col gap-[3px] flex-1 min-w-0">
+                {week.map((cell, di) => (
+                  <div
+                    key={`${wi}-${di}`}
+                    className="w-full aspect-square rounded-[2px]"
+                    style={{
+                      backgroundColor: cell.date ? getColor(cell.level) : 'transparent',
+                    }}
+                    title={cell.date ? `${cell.date}: ${cell.count} commits` : ''}
+                  />
+                ))}
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+    )
   }
 
   return (
@@ -106,117 +170,31 @@ export function Heatmap({ data }: HeatmapProps) {
         </span>
       </div>
 
-      {/* Desktop: GitHub-style grid (7 rows × ~52 cols), fills card */}
-      <div className="hidden sm:block">
-        {/* Month labels row */}
-        <div className="flex mb-1.5">
-          <div className="w-5 shrink-0" />
-          <div className="flex flex-1">
-            {monthLabels.map((ml, i) => {
-              const nextIdx = i + 1 < monthLabels.length ? monthLabels[i + 1].weekIdx : weeks.length
-              const span = nextIdx - ml.weekIdx
-              return (
-                <div
-                  key={ml.label}
-                  className="text-[9px] font-mono text-[#9599A6]"
-                  style={{ flex: `0 0 ${span * 100 / weeks.length}%` }}
-                >
-                  {ml.label}
-                </div>
-              )
-            })}
+      {/* Desktop */}
+      <div className="hidden sm:flex flex-col gap-5 flex-1">
+        {bands.map((bandWeeks, bi) => (
+          <div key={bi}>
+            {renderBand(bandWeeks, bandMonthLabels[bi], bands[bi].length)}
           </div>
-        </div>
-
-        {/* Grid: rows = days, cols = weeks */}
-        <div className="flex" style={{ minHeight: 84 }}>
-          {/* Day labels column */}
-          <div className="flex flex-col gap-[3px] w-5 shrink-0 pt-[2px]">
-            {['', '一', '', '三', '', '五', ''].map((label, i) => (
-              <span key={i} className="h-3 flex items-center text-[9px] font-mono text-[#9599A6] leading-none">
-                {label}
-              </span>
-            ))}
-          </div>
-
-          {/* Cell grid */}
-          <div className="flex gap-[3px] flex-1">
-            {weeks.map((week, wi) => (
-              <div key={wi} className="flex flex-col gap-[3px] flex-1 min-w-0">
-                {week.map((cell, di) => (
-                  <div
-                    key={`${wi}-${di}`}
-                    className="w-full rounded-[2px]"
-                    style={{
-                      height: 12,
-                      backgroundColor: cell.date ? getColor(cell.level) : 'transparent',
-                    }}
-                    title={cell.date ? `${cell.date}: ${cell.count} commits` : ''}
-                  />
-                ))}
-              </div>
-            ))}
-          </div>
-        </div>
+        ))}
       </div>
 
-      {/* Mobile: same grid, larger cells */}
-      <div className="sm:hidden">
-        {/* Month labels */}
-        <div className="flex mb-1">
-          <div className="w-4 shrink-0" />
-          <div className="flex flex-1">
-            {monthLabels.map((ml, i) => {
-              const nextIdx = i + 1 < monthLabels.length ? monthLabels[i + 1].weekIdx : weeks.length
-              const span = nextIdx - ml.weekIdx
-              return (
-                <div
-                  key={ml.label}
-                  className="text-[7px] font-mono text-[#9599A6]"
-                  style={{ flex: `0 0 ${span * 100 / weeks.length}%` }}
-                >
-                  {ml.label}
-                </div>
-              )
-            })}
+      {/* Mobile */}
+      <div className="sm:hidden flex flex-col gap-3 flex-1">
+        {bands.map((bandWeeks, bi) => (
+          <div key={bi}>
+            {renderBand(bandWeeks, bandMonthLabels[bi], bands[bi].length)}
           </div>
-        </div>
-
-        <div className="flex" style={{ minHeight: 64 }}>
-          <div className="flex flex-col gap-[2px] w-4 shrink-0 pt-px">
-            {['', '一', '', '三', '', '五', ''].map((label, i) => (
-              <span key={i} className="h-[8px] flex items-center text-[7px] font-mono text-[#9599A6] leading-none">
-                {label}
-              </span>
-            ))}
-          </div>
-          <div className="flex gap-[2px] flex-1">
-            {weeks.map((week, wi) => (
-              <div key={wi} className="flex flex-col gap-[2px] flex-1 min-w-0">
-                {week.map((cell, di) => (
-                  <div
-                    key={`${wi}-${di}`}
-                    className="w-full rounded-[1px]"
-                    style={{
-                      height: 8,
-                      backgroundColor: cell.date ? getColor(cell.level) : 'transparent',
-                    }}
-                    title={cell.date ? `${cell.date}: ${cell.count} commits` : ''}
-                  />
-                ))}
-              </div>
-            ))}
-          </div>
-        </div>
+        ))}
       </div>
 
       {/* Legend */}
-      <div className="flex items-center justify-end gap-1 mt-3">
+      <div className="flex items-center justify-end gap-1.5 mt-4 pt-3 border-t border-[var(--border-neutral-l1)]">
         <span className="text-[9px] font-mono text-[#9599A6] mr-1">少</span>
         {[0, 1, 2, 3, 4].map(level => (
           <div
             key={level}
-            className="w-2.5 h-2.5 rounded-[1px]"
+            className="w-3 h-3 rounded-[1px]"
             style={{ backgroundColor: getColor(level as 0 | 1 | 2 | 3 | 4) }}
             title={`Level ${level}`}
           />
