@@ -106,15 +106,13 @@ export function Heatmap({ data }: HeatmapProps) {
         </span>
       </div>
 
-      {/* Desktop: True GitHub-style grid (7 rows × ~52 cols) */}
+      {/* Desktop: GitHub-style grid (7 rows × ~52 cols), fills card */}
       <div className="hidden sm:block">
         {/* Month labels row */}
-        <div className="flex mb-1">
-          {/* spacer for day labels column */}
+        <div className="flex mb-1.5">
           <div className="w-5 shrink-0" />
           <div className="flex flex-1">
             {monthLabels.map((ml, i) => {
-              // Calculate how many week columns this month label spans
               const nextIdx = i + 1 < monthLabels.length ? monthLabels[i + 1].weekIdx : weeks.length
               const span = nextIdx - ml.weekIdx
               return (
@@ -131,27 +129,27 @@ export function Heatmap({ data }: HeatmapProps) {
         </div>
 
         {/* Grid: rows = days, cols = weeks */}
-        <div className="flex">
+        <div className="flex" style={{ minHeight: 84 }}>
           {/* Day labels column */}
-          <div className="flex flex-col gap-[2px] w-5 shrink-0 pt-[1px]">
+          <div className="flex flex-col gap-[3px] w-5 shrink-0 pt-[2px]">
             {['', '一', '', '三', '', '五', ''].map((label, i) => (
-              <span key={i} className="h-[9px] flex items-center text-[8px] font-mono text-[#9599A6] leading-none">
+              <span key={i} className="h-3 flex items-center text-[9px] font-mono text-[#9599A6] leading-none">
                 {label}
               </span>
             ))}
           </div>
 
-          {/* Cell grid: each column is a week, each row is a day */}
-          <div className="flex gap-[2px] flex-1">
+          {/* Cell grid */}
+          <div className="flex gap-[3px] flex-1">
             {weeks.map((week, wi) => (
-              <div key={wi} className="flex flex-col gap-[2px] flex-1 min-w-0">
+              <div key={wi} className="flex flex-col gap-[3px] flex-1 min-w-0">
                 {week.map((cell, di) => (
                   <div
                     key={`${wi}-${di}`}
-                    className="w-full aspect-square rounded-[1px]"
+                    className="w-full rounded-[2px]"
                     style={{
+                      height: 12,
                       backgroundColor: cell.date ? getColor(cell.level) : 'transparent',
-                      minWidth: 5,
                     }}
                     title={cell.date ? `${cell.date}: ${cell.count} commits` : ''}
                   />
@@ -162,7 +160,7 @@ export function Heatmap({ data }: HeatmapProps) {
         </div>
       </div>
 
-      {/* Mobile: same grid, tiny cells */}
+      {/* Mobile: same grid, larger cells */}
       <div className="sm:hidden">
         {/* Month labels */}
         <div className="flex mb-1">
@@ -184,22 +182,23 @@ export function Heatmap({ data }: HeatmapProps) {
           </div>
         </div>
 
-        <div className="flex">
-          <div className="flex flex-col gap-px w-4 shrink-0 pt-px">
+        <div className="flex" style={{ minHeight: 64 }}>
+          <div className="flex flex-col gap-[2px] w-4 shrink-0 pt-px">
             {['', '一', '', '三', '', '五', ''].map((label, i) => (
-              <span key={i} className="h-[7px] flex items-center text-[6px] font-mono text-[#9599A6] leading-none">
+              <span key={i} className="h-[8px] flex items-center text-[7px] font-mono text-[#9599A6] leading-none">
                 {label}
               </span>
             ))}
           </div>
-          <div className="flex gap-px flex-1">
+          <div className="flex gap-[2px] flex-1">
             {weeks.map((week, wi) => (
-              <div key={wi} className="flex flex-col gap-px flex-1 min-w-0">
+              <div key={wi} className="flex flex-col gap-[2px] flex-1 min-w-0">
                 {week.map((cell, di) => (
                   <div
                     key={`${wi}-${di}`}
-                    className="w-full aspect-square rounded-[1px]"
+                    className="w-full rounded-[1px]"
                     style={{
+                      height: 8,
                       backgroundColor: cell.date ? getColor(cell.level) : 'transparent',
                     }}
                     title={cell.date ? `${cell.date}: ${cell.count} commits` : ''}
